@@ -1,0 +1,715 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Windows 11 初学者 Go 环境安装指南</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f6f7f9;
+      --paper: #ffffff;
+      --ink: #172033;
+      --muted: #5f6878;
+      --line: #dce2ea;
+      --soft: #eef3f8;
+      --accent: #176b87;
+      --accent-2: #7d4f1d;
+      --good: #197642;
+      --warn: #a05a00;
+      --bad: #a33030;
+      --code-bg: #101827;
+      --code-ink: #e8eef8;
+      --shadow: 0 18px 48px rgba(23, 32, 51, 0.08);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif;
+      line-height: 1.72;
+    }
+
+    a {
+      color: var(--accent);
+      text-decoration: none;
+      border-bottom: 1px solid rgba(23, 107, 135, 0.28);
+    }
+
+    a:hover {
+      border-bottom-color: currentColor;
+    }
+
+    code,
+    pre {
+      font-family: "Cascadia Code", "JetBrains Mono", Consolas, monospace;
+    }
+
+    code {
+      padding: 0.12em 0.35em;
+      border-radius: 4px;
+      background: #edf2f7;
+      color: #26384d;
+      font-size: 0.92em;
+    }
+
+    pre {
+      margin: 16px 0 24px;
+      padding: 18px;
+      overflow-x: auto;
+      border-radius: 8px;
+      background: var(--code-bg);
+      color: var(--code-ink);
+      line-height: 1.58;
+      tab-size: 2;
+    }
+
+    pre code {
+      padding: 0;
+      background: transparent;
+      color: inherit;
+      font-size: 0.94em;
+    }
+
+    .page {
+      max-width: 1160px;
+      margin: 0 auto;
+      padding: 40px 24px 72px;
+    }
+
+    .doc {
+      background: var(--paper);
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow);
+    }
+
+    header {
+      padding: 52px 56px 36px;
+      border-bottom: 1px solid var(--line);
+      background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+    }
+
+    main {
+      padding: 0 56px 56px;
+    }
+
+    .kicker {
+      margin: 0 0 10px;
+      color: var(--accent-2);
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    h1,
+    h2,
+    h3 {
+      line-height: 1.25;
+      letter-spacing: 0;
+    }
+
+    h1 {
+      max-width: 940px;
+      margin: 0;
+      font-size: clamp(34px, 5vw, 58px);
+      font-weight: 800;
+    }
+
+    h2 {
+      margin: 46px 0 16px;
+      padding-top: 8px;
+      font-size: 28px;
+      border-top: 1px solid var(--line);
+    }
+
+    h3 {
+      margin: 28px 0 10px;
+      font-size: 20px;
+    }
+
+    p {
+      margin: 10px 0;
+    }
+
+    ul,
+    ol {
+      margin: 10px 0 16px;
+      padding-left: 1.25rem;
+    }
+
+    li {
+      margin: 6px 0;
+    }
+
+    table {
+      width: 100%;
+      margin: 18px 0 26px;
+      border-collapse: collapse;
+      table-layout: fixed;
+      font-size: 15px;
+    }
+
+    th,
+    td {
+      padding: 12px 13px;
+      border: 1px solid var(--line);
+      vertical-align: top;
+      word-break: break-word;
+    }
+
+    th {
+      background: #eef3f8;
+      text-align: left;
+      font-weight: 700;
+    }
+
+    tbody tr:nth-child(even) td {
+      background: #fafbfd;
+    }
+
+    .meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 26px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      min-height: 30px;
+      padding: 4px 10px;
+      border: 1px solid var(--line);
+      background: #ffffff;
+      border-radius: 999px;
+      white-space: nowrap;
+    }
+
+    .callout {
+      margin: 22px 0;
+      padding: 18px 20px;
+      border-left: 5px solid var(--accent);
+      background: #f2f8fb;
+    }
+
+    .callout.warning {
+      border-left-color: var(--warn);
+      background: #fff7e8;
+    }
+
+    .callout.danger {
+      border-left-color: var(--bad);
+      background: #fae9e9;
+    }
+
+    .tag {
+      display: inline-block;
+      margin: 2px 4px 2px 0;
+      padding: 2px 7px;
+      border-radius: 999px;
+      background: #e7f1f5;
+      color: #164e63;
+      font-size: 12px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .tag.good {
+      background: #e8f6ee;
+      color: var(--good);
+    }
+
+    .tag.warn {
+      background: #fff2d8;
+      color: var(--warn);
+    }
+
+    .diagram {
+      margin: 18px 0 28px;
+      padding: 18px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #ffffff;
+      overflow-x: auto;
+    }
+
+    .mermaid {
+      min-width: 720px;
+      margin: 0;
+      text-align: center;
+    }
+
+    .small {
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .sources {
+      columns: 2;
+      column-gap: 34px;
+      padding-left: 1.2rem;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .sources li {
+      break-inside: avoid;
+      margin: 0 0 10px;
+    }
+
+    @media (max-width: 860px) {
+      .page {
+        padding: 0;
+      }
+
+      .doc {
+        border-left: 0;
+        border-right: 0;
+      }
+
+      header,
+      main {
+        padding-left: 20px;
+        padding-right: 20px;
+      }
+
+      header {
+        padding-top: 34px;
+      }
+
+      table {
+        display: block;
+        overflow-x: auto;
+        table-layout: auto;
+      }
+
+      th,
+      td {
+        min-width: 190px;
+      }
+
+      .sources {
+        columns: 1;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <article class="doc">
+      <header>
+        <p class="kicker">Setup Guide</p>
+        <h1>Windows 11 初学者 Go 环境安装指南</h1>
+        <div class="meta">
+          <span class="pill">生成日期：2026-05-17</span>
+          <span class="pill">当前系统：Windows 11 64 位</span>
+          <span class="pill">Shell：PowerShell 7.6.1</span>
+          <span class="pill">推荐安装器：winget</span>
+        </div>
+      </header>
+
+      <main>
+        <section>
+          <h2>当前环境结论</h2>
+          <p>
+            本文档按当前机器环境编写：Windows 11 家庭中文版 64 位，PowerShell 7.6.1；已检测到 <code>winget</code>、Git 和 VS Code，未检测到 <code>go</code> 命令。因此，推荐使用 Windows 包管理器 <code>winget</code> 自动安装 Go。
+          </p>
+          <table>
+            <thead>
+              <tr>
+                <th>项目</th>
+                <th>检测结果</th>
+                <th>说明</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>操作系统</td>
+                <td><span class="tag good">Windows 11 64 位</span></td>
+                <td>适合安装 Windows amd64 版本 Go。</td>
+              </tr>
+              <tr>
+                <td>PowerShell</td>
+                <td><span class="tag good">7.6.1</span></td>
+                <td>以下脚本均按 PowerShell 编写。</td>
+              </tr>
+              <tr>
+                <td>winget</td>
+                <td><span class="tag good">已安装</span></td>
+                <td>可直接安装 <code>GoLang.Go</code> 包。</td>
+              </tr>
+              <tr>
+                <td>Go</td>
+                <td><span class="tag warn">未安装</span></td>
+                <td>安装完成后需要重新打开终端，或刷新当前终端的 <code>PATH</code>。</td>
+              </tr>
+              <tr>
+                <td>Git / VS Code</td>
+                <td><span class="tag good">已安装</span></td>
+                <td>可直接配置 Go 插件并开始练习。</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div class="callout">
+            <strong>初学者建议：</strong>先使用本文的“一键安装脚本”，再运行“验证脚本”。如果中途看到 Windows UAC 权限确认，请允许安装器继续。
+          </div>
+        </section>
+
+        <section>
+          <h2>安装流程</h2>
+          <div class="diagram">
+            <pre class="mermaid">
+flowchart TD
+  A["打开 PowerShell"] --> B["运行 winget 安装脚本"]
+  B --> C["刷新 PATH 或重开终端"]
+  C --> D["运行 go version 验证"]
+  D --> E["安装 VS Code Go 插件"]
+  E --> F["创建 Hello World 项目"]
+  F --> G["运行 go run / go test"]
+            </pre>
+          </div>
+        </section>
+
+        <section>
+          <h2>方式一：winget 自动安装</h2>
+          <p>
+            这是当前机器的推荐方式。脚本会检查 <code>winget</code>，安装官方 Go 包 <code>GoLang.Go</code>，刷新当前终端的 <code>PATH</code>，并把用户级 Go 工具目录 <code>%USERPROFILE%\go\bin</code> 加入用户环境变量。
+          </p>
+
+          <div class="callout warning">
+            <strong>执行前注意：</strong>如果你已经手动安装过 Go，建议先运行 <code>go version</code> 看看版本。重复安装通常会升级或修复，但初学阶段保持一个安装来源最省心。
+          </div>
+
+          <pre><code class="language-powershell">$ErrorActionPreference = "Stop"
+
+function Add-UserPathIfMissing {
+  param([Parameter(Mandatory = $true)][string]$PathToAdd)
+
+  $current = [Environment]::GetEnvironmentVariable("Path", "User")
+  $parts = @()
+  if ($current) {
+    $parts = $current -split ";" | Where-Object { $_ -and $_.Trim() }
+  }
+
+  $exists = $parts | Where-Object { $_.TrimEnd("\") -ieq $PathToAdd.TrimEnd("\") }
+  if (-not $exists) {
+    $next = (@($parts) + $PathToAdd) -join ";"
+    [Environment]::SetEnvironmentVariable("Path", $next, "User")
+    Write-Host "已加入用户 PATH: $PathToAdd"
+  } else {
+    Write-Host "用户 PATH 已包含: $PathToAdd"
+  }
+}
+
+if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
+  throw "未找到 winget。请先从 Microsoft Store 更新“应用安装程序”，或使用本文的 MSI 安装方式。"
+}
+
+winget install --id GoLang.Go -e --source winget `
+  --accept-source-agreements `
+  --accept-package-agreements
+
+$goBin = "C:\Program Files\Go\bin"
+$userGoBin = Join-Path $env:USERPROFILE "go\bin"
+Add-UserPathIfMissing -PathToAdd $goBin
+Add-UserPathIfMissing -PathToAdd $userGoBin
+
+$env:Path = [Environment]::GetEnvironmentVariable("Path", "Machine") + ";" +
+            [Environment]::GetEnvironmentVariable("Path", "User")
+
+go version
+go env GOPATH GOROOT GOOS GOARCH</code></pre>
+
+          <p>
+            如果最后输出类似 <code>go version go1.26.3 windows/amd64</code>，说明安装成功。版本号会随着 Go 官方发布和 <code>winget</code> 源更新而变化。
+          </p>
+        </section>
+
+        <section>
+          <h2>方式二：官方 MSI 兜底安装</h2>
+          <p>
+            如果 <code>winget</code> 不可用，可以从 Go 官方下载最新稳定版 Windows amd64 MSI。下面脚本会访问 Go 官方下载接口，自动选择最新稳定版 Windows 64 位安装包并启动安装。
+          </p>
+
+          <pre><code class="language-powershell">$ErrorActionPreference = "Stop"
+
+$releases = Invoke-RestMethod -Uri "https://go.dev/dl/?mode=json"
+$release = $releases | Select-Object -First 1
+$file = $release.files |
+  Where-Object { $_.os -eq "windows" -and $_.arch -eq "amd64" -and $_.kind -eq "installer" } |
+  Select-Object -First 1
+
+if (-not $file) {
+  throw "未在 Go 官方下载列表中找到 Windows amd64 MSI 安装包。"
+}
+
+$url = "https://go.dev/dl/$($file.filename)"
+$installer = Join-Path $env:TEMP $file.filename
+
+Write-Host "正在下载: $url"
+Invoke-WebRequest -Uri $url -OutFile $installer
+
+Write-Host "正在启动安装器: $installer"
+Start-Process msiexec.exe -Wait -ArgumentList "/i `"$installer`""
+
+$env:Path = [Environment]::GetEnvironmentVariable("Path", "Machine") + ";" +
+            [Environment]::GetEnvironmentVariable("Path", "User")
+
+go version</code></pre>
+
+          <p>
+            MSI 安装后通常会把 <code>C:\Program Files\Go\bin</code> 写入系统 <code>PATH</code>。如果当前终端还找不到 <code>go</code>，关闭 PowerShell 后重新打开即可。
+          </p>
+        </section>
+
+        <section>
+          <h2>安装 VS Code Go 插件</h2>
+          <p>
+            当前机器已检测到 VS Code。安装 Go 插件后，VS Code 会提供语法高亮、跳转、格式化、调试和测试入口。
+          </p>
+
+          <pre><code class="language-powershell">if (Get-Command code -ErrorAction SilentlyContinue) {
+  code --install-extension golang.go
+} else {
+  Write-Host "未找到 code 命令。可以打开 VS Code，在扩展市场搜索 Go 并安装官方 Go 插件。"
+}</code></pre>
+
+          <p>
+            第一次打开 Go 文件时，VS Code 可能提示安装 <code>gopls</code>、<code>dlv</code> 等工具。按提示安装即可；这些工具通常会安装到 <code>%USERPROFILE%\go\bin</code>。
+          </p>
+        </section>
+
+        <section>
+          <h2>可选：配置 Go 模块代理</h2>
+          <p>
+            如果下载依赖很慢，可以配置 Go 模块代理。公司或团队有统一代理时，应优先使用团队指定配置。
+          </p>
+
+          <pre><code class="language-powershell"># 中国大陆网络常用配置
+go env -w GOPROXY=https://goproxy.cn,direct
+
+# 如需恢复 Go 官方默认代理
+go env -w GOPROXY=https://proxy.golang.org,direct</code></pre>
+
+          <p>
+            查看当前配置：
+          </p>
+
+          <pre><code class="language-powershell">go env GOPROXY GOPATH GOROOT GOBIN</code></pre>
+        </section>
+
+        <section>
+          <h2>创建第一个 Go 项目</h2>
+          <p>
+            Go 现在以模块为基本单位。初学时可以把练习项目放到用户目录下，例如 <code>$HOME\go-practice\hello-go</code>。
+          </p>
+
+          <pre><code class="language-powershell">$project = Join-Path $HOME "go-practice\hello-go"
+New-Item -ItemType Directory -Force $project | Out-Null
+Set-Location $project
+
+go mod init example.com/hello-go
+
+@'
+package main
+
+import "fmt"
+
+func main() {
+    fmt.Println("Hello, Go on Windows!")
+}
+'@ | Set-Content -Path .\main.go -Encoding UTF8
+
+go fmt .\main.go
+go run .</code></pre>
+
+          <p>
+            看到 <code>Hello, Go on Windows!</code> 就说明开发环境已经能正常编译和运行 Go 程序。
+          </p>
+        </section>
+
+        <section>
+          <h2>再加一个测试</h2>
+          <p>
+            Go 自带测试工具，初学者应该尽早习惯 <code>go test</code>。
+          </p>
+
+          <pre><code class="language-powershell">@'
+package main
+
+func Add(a int, b int) int {
+    return a + b
+}
+'@ | Set-Content -Path .\add.go -Encoding UTF8
+
+@'
+package main
+
+import "testing"
+
+func TestAdd(t *testing.T) {
+    got := Add(2, 3)
+    want := 5
+    if got != want {
+        t.Fatalf("Add(2, 3) = %d, want %d", got, want)
+    }
+}
+'@ | Set-Content -Path .\add_test.go -Encoding UTF8
+
+go fmt .\add.go .\add_test.go
+go test ./...</code></pre>
+
+          <p>
+            如果输出 <code>ok</code>，说明测试通过。
+          </p>
+        </section>
+
+        <section>
+          <h2>日常常用命令</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>命令</th>
+                <th>用途</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>go version</code></td>
+                <td>查看 Go 是否安装成功，以及当前版本。</td>
+              </tr>
+              <tr>
+                <td><code>go env</code></td>
+                <td>查看 Go 环境变量，例如 <code>GOPATH</code>、<code>GOROOT</code>、<code>GOPROXY</code>。</td>
+              </tr>
+              <tr>
+                <td><code>go mod init example.com/app</code></td>
+                <td>初始化一个 Go 模块。</td>
+              </tr>
+              <tr>
+                <td><code>go run .</code></td>
+                <td>编译并运行当前目录的程序。</td>
+              </tr>
+              <tr>
+                <td><code>go test ./...</code></td>
+                <td>运行当前模块下所有测试。</td>
+              </tr>
+              <tr>
+                <td><code>go fmt ./...</code></td>
+                <td>格式化当前模块下的 Go 代码。</td>
+              </tr>
+              <tr>
+                <td><code>go mod tidy</code></td>
+                <td>整理依赖，添加缺失依赖并删除不再使用的依赖。</td>
+              </tr>
+              <tr>
+                <td><code>go install package@latest</code></td>
+                <td>安装 Go 编写的命令行工具到 <code>%USERPROFILE%\go\bin</code>。</td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+
+        <section>
+          <h2>常见问题</h2>
+          <h3>PowerShell 提示 go 不是内部或外部命令</h3>
+          <p>
+            通常是当前终端还没有加载新的 <code>PATH</code>。先运行：
+          </p>
+
+          <pre><code class="language-powershell">$env:Path = [Environment]::GetEnvironmentVariable("Path", "Machine") + ";" +
+            [Environment]::GetEnvironmentVariable("Path", "User")
+go version</code></pre>
+
+          <p>
+            如果仍然失败，关闭 PowerShell 和 VS Code 终端，重新打开后再试。
+          </p>
+
+          <h3>VS Code 能打开文件，但没有补全和跳转</h3>
+          <p>
+            确认已安装官方 Go 插件，并允许它安装 <code>gopls</code>。也可以在终端运行：
+          </p>
+
+          <pre><code class="language-powershell">go install golang.org/x/tools/gopls@latest</code></pre>
+
+          <h3>下载依赖失败或很慢</h3>
+          <p>
+            先检查网络，然后查看 <code>GOPROXY</code>：
+          </p>
+
+          <pre><code class="language-powershell">go env GOPROXY</code></pre>
+
+          <p>
+            如在中国大陆网络环境，可以尝试本文的模块代理配置。
+          </p>
+
+          <h3>GOROOT 和 GOPATH 要手动设置吗</h3>
+          <p>
+            初学者通常不需要手动设置。<code>GOROOT</code> 是 Go 安装目录，MSI 会处理；<code>GOPATH</code> 默认是 <code>%USERPROFILE%\go</code>。现在 Go 项目主要依赖 <code>go.mod</code> 管理，不需要把项目放进 <code>GOPATH</code>。
+          </p>
+        </section>
+
+        <section>
+          <h2>卸载或升级</h2>
+          <p>
+            如果使用 <code>winget</code> 安装，可以用以下命令升级或卸载：
+          </p>
+
+          <pre><code class="language-powershell"># 升级 Go
+winget upgrade --id GoLang.Go -e --source winget
+
+# 卸载 Go
+winget uninstall --id GoLang.Go -e</code></pre>
+
+          <div class="callout danger">
+            <strong>谨慎删除：</strong><code>%USERPROFILE%\go</code> 里可能有你安装的工具和缓存。卸载 Go 不一定需要删除这个目录，除非你明确知道里面没有要保留的内容。
+          </div>
+        </section>
+
+        <section>
+          <h2>参考资料</h2>
+          <ol class="sources">
+            <li><a href="https://go.dev/doc/install">Go 官方安装文档</a></li>
+            <li><a href="https://go.dev/dl/">Go 官方下载页</a></li>
+            <li><a href="https://go.dev/doc/tutorial/getting-started">Go 官方入门教程</a></li>
+            <li><a href="https://go.dev/ref/mod">Go Modules Reference</a></li>
+            <li><a href="https://learn.microsoft.com/en-us/windows/package-manager/winget/">Microsoft winget 文档</a></li>
+            <li><a href="https://marketplace.visualstudio.com/items?itemName=golang.Go">VS Code Go 扩展</a></li>
+          </ol>
+          <p class="small">
+            本机检测到的官方 Go 最新稳定版为 <code>go1.26.3</code>；实际安装版本以 Go 官方下载页和 <code>winget</code> 源为准。
+          </p>
+        </section>
+      </main>
+    </article>
+  </div>
+
+  <script type="module">
+    import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: "base",
+      securityLevel: "strict",
+      themeVariables: {
+        fontFamily: "-apple-system, BlinkMacSystemFont, Segoe UI, Microsoft YaHei, sans-serif",
+        primaryColor: "#eef3f8",
+        primaryTextColor: "#172033",
+        primaryBorderColor: "#176b87",
+        lineColor: "#6b7280",
+        secondaryColor: "#f7fbfc",
+        tertiaryColor: "#ffffff"
+      }
+    });
+  </script>
+</body>
+</html>

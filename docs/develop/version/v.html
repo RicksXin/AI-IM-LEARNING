@@ -1,0 +1,455 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>第一个 Gin 后端接口：/v 系统版本信息</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f6f7f9;
+      --paper: #ffffff;
+      --ink: #172033;
+      --muted: #5f6878;
+      --line: #dce2ea;
+      --soft: #eef3f8;
+      --accent: #176b87;
+      --accent-2: #7d4f1d;
+      --good: #197642;
+      --warn: #a05a00;
+      --code-bg: #101827;
+      --code-ink: #e8eef8;
+      --shadow: 0 18px 48px rgba(23, 32, 51, 0.08);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif;
+      line-height: 1.72;
+    }
+
+    a {
+      color: var(--accent);
+      text-decoration: none;
+      border-bottom: 1px solid rgba(23, 107, 135, 0.28);
+    }
+
+    a:hover {
+      border-bottom-color: currentColor;
+    }
+
+    code,
+    pre {
+      font-family: "Cascadia Code", "JetBrains Mono", Consolas, monospace;
+    }
+
+    code {
+      padding: 0.12em 0.35em;
+      border-radius: 4px;
+      background: #edf2f7;
+      color: #26384d;
+      font-size: 0.92em;
+    }
+
+    pre {
+      margin: 16px 0 24px;
+      padding: 18px;
+      overflow-x: auto;
+      border-radius: 8px;
+      background: var(--code-bg);
+      color: var(--code-ink);
+      line-height: 1.58;
+    }
+
+    pre code {
+      padding: 0;
+      background: transparent;
+      color: inherit;
+      font-size: 0.94em;
+    }
+
+    .page {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 40px 24px 72px;
+    }
+
+    .doc {
+      background: var(--paper);
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow);
+    }
+
+    header {
+      padding: 52px 56px 36px;
+      border-bottom: 1px solid var(--line);
+      background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+    }
+
+    main {
+      padding: 0 56px 56px;
+    }
+
+    .kicker {
+      margin: 0 0 10px;
+      color: var(--accent-2);
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    h1,
+    h2,
+    h3 {
+      line-height: 1.25;
+      letter-spacing: 0;
+    }
+
+    h1 {
+      max-width: 900px;
+      margin: 0;
+      font-size: clamp(34px, 5vw, 56px);
+      font-weight: 800;
+    }
+
+    h2 {
+      margin: 46px 0 16px;
+      padding-top: 8px;
+      font-size: 28px;
+      border-top: 1px solid var(--line);
+    }
+
+    h3 {
+      margin: 28px 0 10px;
+      font-size: 20px;
+    }
+
+    p {
+      margin: 10px 0;
+    }
+
+    ul,
+    ol {
+      margin: 10px 0 16px;
+      padding-left: 1.25rem;
+    }
+
+    li {
+      margin: 6px 0;
+    }
+
+    table {
+      width: 100%;
+      margin: 18px 0 26px;
+      border-collapse: collapse;
+      table-layout: fixed;
+      font-size: 15px;
+    }
+
+    th,
+    td {
+      padding: 12px 13px;
+      border: 1px solid var(--line);
+      vertical-align: top;
+      word-break: break-word;
+    }
+
+    th {
+      background: #eef3f8;
+      text-align: left;
+      font-weight: 700;
+    }
+
+    tbody tr:nth-child(even) td {
+      background: #fafbfd;
+    }
+
+    .meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 26px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      min-height: 30px;
+      padding: 4px 10px;
+      border: 1px solid var(--line);
+      background: #ffffff;
+      border-radius: 999px;
+      white-space: nowrap;
+    }
+
+    .callout {
+      margin: 22px 0;
+      padding: 18px 20px;
+      border-left: 5px solid var(--accent);
+      background: #f2f8fb;
+    }
+
+    .callout.warning {
+      border-left-color: var(--warn);
+      background: #fff7e8;
+    }
+
+    .tag {
+      display: inline-block;
+      margin: 2px 4px 2px 0;
+      padding: 2px 7px;
+      border-radius: 999px;
+      background: #e7f1f5;
+      color: #164e63;
+      font-size: 12px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .tag.good {
+      background: #e8f6ee;
+      color: var(--good);
+    }
+
+    .small {
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    @media (max-width: 860px) {
+      .page {
+        padding: 0;
+      }
+
+      .doc {
+        border-left: 0;
+        border-right: 0;
+      }
+
+      header,
+      main {
+        padding-left: 20px;
+        padding-right: 20px;
+      }
+
+      header {
+        padding-top: 34px;
+      }
+
+      table {
+        display: block;
+        overflow-x: auto;
+        table-layout: auto;
+      }
+
+      th,
+      td {
+        min-width: 190px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <article class="doc">
+      <header>
+        <p class="kicker">Beginner Backend Guide</p>
+        <h1>第一个 Gin 后端接口：/v 系统版本信息</h1>
+        <div class="meta">
+          <span class="pill">后端目录：server</span>
+          <span class="pill">框架：Gin</span>
+          <span class="pill">接口：GET /v</span>
+          <span class="pill">默认端口：8080</span>
+        </div>
+      </header>
+
+      <main>
+        <section>
+          <h2>这个接口做什么</h2>
+          <p>
+            本次创建的是整个后端项目的第一个服务接口。启动服务后，访问 <code>/v</code>，后端会返回系统名称和版本号。
+          </p>
+          <pre><code class="language-json">{
+  "name": "LearningAI IM Backend",
+  "version": "0.1.0"
+}</code></pre>
+          <p>
+            这个接口很小，但很重要。它可以用来确认后端是否启动成功，也方便前端、运维脚本或健康检查工具知道当前后端版本。
+          </p>
+        </section>
+
+        <section>
+          <h2>项目文件</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>文件</th>
+                <th>作用</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>server/go.mod</code></td>
+                <td>Go 模块文件，记录项目名称和依赖。本项目使用 <code>github.com/gin-gonic/gin</code>。</td>
+              </tr>
+              <tr>
+                <td><code>server/main.go</code></td>
+                <td>服务入口。这里创建 Gin 路由、注册 <code>/v</code> 接口，并启动 HTTP 服务。</td>
+              </tr>
+              <tr>
+                <td><code>server/main_test.go</code></td>
+                <td>接口测试。它会模拟请求 <code>/v</code>，检查返回状态码和 JSON 字段是否正确。</td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+
+        <section>
+          <h2>第一次启动</h2>
+          <p>
+            先进入后端项目目录：
+          </p>
+          <pre><code class="language-powershell">cd D:\Developer\Project\Personal\LearningAI\server</code></pre>
+
+          <p>
+            第一次运行前，下载依赖：
+          </p>
+          <pre><code class="language-powershell">go mod tidy</code></pre>
+
+          <p>
+            启动服务：
+          </p>
+          <pre><code class="language-powershell">go run .</code></pre>
+
+          <p>
+            服务启动后，终端会打印类似下面的地址：
+          </p>
+          <pre><code class="language-text">server listening on 0.0.0.0:8080
+version endpoint: http://localhost:8080/v
+version endpoint: http://192.168.x.x:8080/v</code></pre>
+
+          <div class="callout">
+            <strong>怎么看：</strong><code>localhost</code> 是本机访问地址；<code>192.168.x.x</code> 这种是局域网地址，同一网络下的手机或其他电脑可能也能访问。
+          </div>
+        </section>
+
+        <section>
+          <h2>访问接口</h2>
+          <p>
+            服务启动后，可以打开浏览器访问：
+          </p>
+          <pre><code class="language-text">http://localhost:8080/v</code></pre>
+
+          <p>
+            也可以在 PowerShell 里请求：
+          </p>
+          <pre><code class="language-powershell">Invoke-RestMethod http://localhost:8080/v</code></pre>
+
+          <p>
+            如果你安装了 curl，也可以这样：
+          </p>
+          <pre><code class="language-powershell">curl http://localhost:8080/v</code></pre>
+        </section>
+
+        <section>
+          <h2>修改端口</h2>
+          <p>
+            默认端口是 <code>8080</code>。如果 8080 被占用，可以临时换成 9090：
+          </p>
+          <pre><code class="language-powershell">$env:PORT = "9090"
+go run .</code></pre>
+
+          <p>
+            访问地址也要跟着改：
+          </p>
+          <pre><code class="language-text">http://localhost:9090/v</code></pre>
+        </section>
+
+        <section>
+          <h2>运行测试</h2>
+          <p>
+            测试可以帮助你确认接口没有被改坏。进入 <code>server</code> 目录后运行：
+          </p>
+          <pre><code class="language-powershell">go test ./...</code></pre>
+
+          <p>
+            如果看到类似 <code>ok learningai/server</code>，说明测试通过。
+          </p>
+        </section>
+
+        <section>
+          <h2>代码说明</h2>
+          <h3>接口数据</h3>
+          <p>
+            <code>main.go</code> 里定义了两个常量：
+          </p>
+          <pre><code class="language-go">const (
+    appName    = "LearningAI IM Backend"
+    appVersion = "0.1.0"
+)</code></pre>
+
+          <p>
+            以后如果要改系统名或版本号，可以先改这里。
+          </p>
+
+          <h3>注册路由</h3>
+          <pre><code class="language-go">router.GET("/v", handleVersion)</code></pre>
+          <p>
+            这行表示：当浏览器或客户端请求 <code>GET /v</code> 时，Gin 会调用 <code>handleVersion</code> 函数处理。
+          </p>
+
+          <h3>返回 JSON</h3>
+          <pre><code class="language-go">c.JSON(http.StatusOK, VersionResponse{
+    Name:    appName,
+    Version: appVersion,
+})</code></pre>
+          <p>
+            <code>http.StatusOK</code> 是 HTTP 200，表示请求成功。后面的结构体会被 Gin 自动转换成 JSON。
+          </p>
+        </section>
+
+        <section>
+          <h2>常见问题</h2>
+          <h3>提示 go 不是内部或外部命令</h3>
+          <p>
+            说明当前电脑还没有安装 Go，或者终端没有加载 Go 的 PATH。可以先看安装文档：<a href="../../project/setup/go.html">Windows 11 初学者 Go 环境安装指南</a>。
+          </p>
+
+          <h3>端口被占用</h3>
+          <p>
+            如果看到 <code>bind: Only one usage of each socket address</code> 之类的错误，说明端口已经被其他程序占用。可以改用别的端口：
+          </p>
+          <pre><code class="language-powershell">$env:PORT = "9090"
+go run .</code></pre>
+
+          <h3>局域网地址访问不了</h3>
+          <p>
+            先确认服务启动时打印了 <code>0.0.0.0:8080</code>，再检查 Windows 防火墙是否允许当前程序访问网络。初学阶段优先用 <code>localhost</code> 验证本机访问。
+          </p>
+        </section>
+
+        <section>
+          <h2>下一步建议</h2>
+          <ol>
+            <li>把 <code>/v</code> 当作后端是否可用的最小验证接口。</li>
+            <li>后续可以新增 <code>/health</code> 做健康检查，新增 <code>/api</code> 存放业务接口。</li>
+            <li>随着接口变多，再把 <code>main.go</code> 拆成 config、router、handler、service 等目录。</li>
+          </ol>
+          <p class="small">
+            参考资料：<a href="https://github.com/gin-gonic/gin">Gin GitHub</a>、<a href="https://gin-gonic.com/docs/">Gin 官方文档</a>、<a href="https://go.dev/doc/tutorial/getting-started">Go 官方入门教程</a>。
+          </p>
+        </section>
+      </main>
+    </article>
+  </div>
+</body>
+</html>

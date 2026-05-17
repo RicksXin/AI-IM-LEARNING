@@ -3,28 +3,26 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Rust 后端 + Flutter 前端全栈全端 IM 产品可行性评估</title>
+  <title>Go 后端 + React Native 前端全栈全端 IM 可行性评估</title>
   <style>
     :root {
       color-scheme: light;
       --bg: #f6f7f9;
       --paper: #ffffff;
-      --ink: #1f2933;
-      --muted: #607083;
-      --line: #d9e1ea;
+      --ink: #172033;
+      --muted: #5f6878;
+      --line: #dce2ea;
       --soft: #eef3f8;
-      --accent: #0f766e;
-      --accent-ink: #0b4f4a;
-      --code-bg: #172033;
-      --code-ink: #e8eef8;
+      --accent: #176b87;
+      --accent-2: #7d4f1d;
+      --good: #197642;
+      --warn: #a05a00;
+      --bad: #a33030;
+      --shadow: 0 18px 48px rgba(23, 32, 51, 0.08);
     }
 
     * {
       box-sizing: border-box;
-    }
-
-    html {
-      scroll-behavior: smooth;
     }
 
     body {
@@ -32,991 +30,863 @@
       background: var(--bg);
       color: var(--ink);
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif;
-      line-height: 1.75;
-      letter-spacing: 0;
-    }
-
-    .page {
-      width: min(1120px, calc(100% - 40px));
-      margin: 0 auto;
-      padding: 48px 0 72px;
-    }
-
-    article {
-      background: var(--paper);
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      padding: 48px;
-      box-shadow: 0 18px 50px rgba(31, 41, 51, 0.08);
-    }
-
-    h1, h2, h3 {
-      line-height: 1.28;
-      color: #13212f;
-      margin: 0 0 16px;
-    }
-
-    h1 {
-      font-size: 34px;
-      padding-bottom: 18px;
-      border-bottom: 3px solid var(--accent);
-      margin-bottom: 24px;
-    }
-
-    h2 {
-      font-size: 25px;
-      margin-top: 42px;
-      padding-top: 18px;
-      border-top: 1px solid var(--line);
-    }
-
-    h3 {
-      font-size: 19px;
-      margin-top: 28px;
-      color: var(--accent-ink);
-    }
-
-    p {
-      margin: 12px 0;
+      line-height: 1.72;
     }
 
     a {
       color: var(--accent);
       text-decoration: none;
-      border-bottom: 1px solid rgba(15, 118, 110, 0.35);
+      border-bottom: 1px solid rgba(23, 107, 135, 0.28);
     }
 
     a:hover {
       border-bottom-color: currentColor;
     }
 
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin: 18px 0 28px;
-      font-size: 14px;
-      overflow-wrap: anywhere;
+    .page {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 40px 24px 72px;
     }
 
-    th, td {
+    .report {
+      background: var(--paper);
       border: 1px solid var(--line);
-      padding: 10px 12px;
+      box-shadow: var(--shadow);
+    }
+
+    header {
+      padding: 52px 56px 36px;
+      border-bottom: 1px solid var(--line);
+      background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+    }
+
+    main {
+      padding: 0 56px 56px;
+    }
+
+    .kicker {
+      margin: 0 0 10px;
+      color: var(--accent-2);
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    h1,
+    h2,
+    h3 {
+      line-height: 1.25;
+      letter-spacing: 0;
+    }
+
+    h1 {
+      max-width: 940px;
+      margin: 0;
+      font-size: clamp(34px, 5vw, 58px);
+      font-weight: 800;
+    }
+
+    h2 {
+      margin: 46px 0 16px;
+      padding-top: 8px;
+      font-size: 28px;
+      border-top: 1px solid var(--line);
+    }
+
+    h3 {
+      margin: 28px 0 10px;
+      font-size: 20px;
+    }
+
+    p {
+      margin: 10px 0;
+    }
+
+    ul,
+    ol {
+      margin: 10px 0 16px;
+      padding-left: 1.25rem;
+    }
+
+    li {
+      margin: 6px 0;
+    }
+
+    .meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 26px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      min-height: 30px;
+      padding: 4px 10px;
+      border: 1px solid var(--line);
+      background: #ffffff;
+      border-radius: 999px;
+      white-space: nowrap;
+    }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 14px;
+      margin: 28px 0 10px;
+    }
+
+    .metric {
+      min-height: 128px;
+      padding: 18px;
+      border: 1px solid var(--line);
+      background: var(--soft);
+      border-radius: 8px;
+    }
+
+    .metric strong {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 30px;
+      line-height: 1;
+    }
+
+    .metric span {
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .callout {
+      margin: 22px 0;
+      padding: 18px 20px;
+      border-left: 5px solid var(--accent);
+      background: #f2f8fb;
+    }
+
+    .callout.warning {
+      border-left-color: var(--warn);
+      background: #fff7e8;
+    }
+
+    .score {
+      font-weight: 800;
+      color: var(--good);
+    }
+
+    table {
+      width: 100%;
+      margin: 18px 0 26px;
+      border-collapse: collapse;
+      table-layout: fixed;
+      font-size: 15px;
+    }
+
+    th,
+    td {
+      padding: 12px 13px;
+      border: 1px solid var(--line);
       vertical-align: top;
+      word-break: break-word;
     }
 
     th {
-      background: var(--soft);
-      color: #25364a;
+      background: #eef3f8;
       text-align: left;
       font-weight: 700;
     }
 
     tbody tr:nth-child(even) td {
-      background: #fbfcfe;
+      background: #fafbfd;
     }
 
-    ol, ul {
-      padding-left: 24px;
+    .tag {
+      display: inline-block;
+      margin: 2px 4px 2px 0;
+      padding: 2px 7px;
+      border-radius: 999px;
+      background: #e7f1f5;
+      color: #164e63;
+      font-size: 12px;
+      font-weight: 700;
+      white-space: nowrap;
     }
 
-    li + li {
-      margin-top: 4px;
+    .tag.good {
+      background: #e8f6ee;
+      color: var(--good);
     }
 
-    code {
-      font-family: "Cascadia Code", "JetBrains Mono", Consolas, monospace;
-      font-size: 0.92em;
-      background: #eef3f8;
-      color: #26384d;
-      padding: 0.1em 0.35em;
-      border-radius: 4px;
+    .tag.warn {
+      background: #fff2d8;
+      color: var(--warn);
     }
 
-    pre {
-      overflow-x: auto;
-      margin: 20px 0 28px;
+    .tag.bad {
+      background: #fae9e9;
+      color: var(--bad);
+    }
+
+    .diagram {
+      margin: 18px 0 28px;
       padding: 18px;
-      border-radius: 8px;
-      background: var(--code-bg);
-      color: var(--code-ink);
-      border: 1px solid #26364f;
-      line-height: 1.55;
-    }
-
-    pre code {
-      background: transparent;
-      color: inherit;
-      padding: 0;
-      border-radius: 0;
-    }
-
-    pre.mermaid {
-      background: #fbfcfe;
-      color: var(--ink);
       border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #ffffff;
+      overflow-x: auto;
+    }
+
+    .mermaid {
+      min-width: 780px;
+      margin: 0;
       text-align: center;
     }
 
-    .meta {
-      margin-bottom: 28px;
+    .sources {
+      columns: 2;
+      column-gap: 34px;
+      padding-left: 1.2rem;
       color: var(--muted);
       font-size: 14px;
     }
 
-    @media (max-width: 760px) {
+    .sources li {
+      break-inside: avoid;
+      margin: 0 0 10px;
+    }
+
+    .small {
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    @media (max-width: 860px) {
       .page {
-        width: min(100% - 20px, 1120px);
-        padding: 20px 0 40px;
+        padding: 0;
       }
 
-      article {
-        padding: 24px 18px;
+      .report {
+        border-left: 0;
+        border-right: 0;
       }
 
-      h1 {
-        font-size: 26px;
+      header,
+      main {
+        padding-left: 20px;
+        padding-right: 20px;
       }
 
-      h2 {
-        font-size: 21px;
+      header {
+        padding-top: 34px;
+      }
+
+      .summary-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
       }
 
       table {
         display: block;
         overflow-x: auto;
-        white-space: nowrap;
+        table-layout: auto;
+      }
+
+      th,
+      td {
+        min-width: 190px;
+      }
+
+      .sources {
+        columns: 1;
       }
     }
 
-    @media print {
-      body {
-        background: #fff;
-      }
-
-      .page {
-        width: 100%;
-        padding: 0;
-      }
-
-      article {
-        border: 0;
-        box-shadow: none;
-        padding: 0;
-      }
-
-      a {
-        color: inherit;
-        border-bottom: 0;
+    @media (max-width: 560px) {
+      .summary-grid {
+        grid-template-columns: 1fr;
       }
     }
   </style>
 </head>
 <body>
-  <main class="page">
-    <article>
-<h1 id="rust-flutter-im">Rust 后端 + Flutter 前端全栈全端 IM 产品可行性评估</h1>
-<p>资料核对日期：2026-05-15<br />
-评估前提：以 AI 编程为主要生产方式，不把 Rust、Flutter、分布式系统的学习曲线作为主要约束；重点评估技术路线本身是否适合做一个可长期演进的 IM 即时通信产品。</p>
-<h2 id="section">1. 结论</h2>
-<p>Rust 后端 + Flutter 前端是可行且值得采用的全栈全端 IM 技术路线，尤其适合目标是“自研协议、自控数据、重视性能与安全、希望一套客户端覆盖移动端、桌面端和 Web”的产品。</p>
-<p>推荐度：8.6 / 10。</p>
-<p>更具体地说：</p>
-<table>
-<thead>
-<tr>
-<th>维度</th>
-<th>结论</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>后端长期能力</td>
-<td>Rust 很适合高并发长连接、消息分发、低资源占用、内存安全和协议层服务</td>
-</tr>
-<tr>
-<td>前端全端覆盖</td>
-<td>Flutter 官方覆盖 Android、iOS、Windows、macOS、Linux、Web，适合统一 UI 与业务状态</td>
-</tr>
-<tr>
-<td>AI 编程适配度</td>
-<td>Rust 的类型系统、编译器和测试边界能约束 AI 输出；Flutter 的组件化适合快速生成界面</td>
-</tr>
-<tr>
-<td>最大风险</td>
-<td>IM 难点不在页面或 CRUD，而在消息一致性、离线同步、推送、端到端加密、多设备、灰度和运维</td>
-</tr>
-<tr>
-<td>替代路线</td>
-<td>Go + Flutter 是更稳妥的工程效率路线；Node/NestJS + Flutter 更快出 MVP；Matrix 更适合联邦通信；托管 IM 最快但控制力低</td>
-</tr>
-</tbody>
-</table>
-<p>建议路线：先用 Rust 做模块化单体后端，Flutter 做统一客户端，PostgreSQL + Redis + NATS 或 Kafka + S3 兼容对象存储作为基础设施。不要一开始拆成大量微服务，也不要一开始自研端到端加密协议。</p>
-<h2 id="im">2. IM 产品的真实复杂度</h2>
-<p>IM 不是“WebSocket 聊天室 + 消息表”。一个可用的全端 IM 至少要处理这些核心问题：</p>
-<table>
-<thead>
-<tr>
-<th>模块</th>
-<th>关键问题</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>实时连接</td>
-<td>WebSocket 长连接、断线重连、心跳、会话迁移、多端在线</td>
-</tr>
-<tr>
-<td>消息可靠性</td>
-<td>客户端去重、服务端幂等、发送确认、送达确认、已读回执、乱序修复</td>
-</tr>
-<tr>
-<td>离线同步</td>
-<td>基于会话序号或全局同步游标拉取增量，支持冷启动恢复</td>
-</tr>
-<tr>
-<td>推送通知</td>
-<td>Android/Web 通常走 FCM，Apple 生态走 APNs；推送不能替代消息同步</td>
-</tr>
-<tr>
-<td>多设备</td>
-<td>同账号多端登录、设备级消息状态、撤回和编辑同步</td>
-</tr>
-<tr>
-<td>媒体消息</td>
-<td>预签名上传、缩略图、转码、病毒扫描、生命周期管理</td>
-</tr>
-<tr>
-<td>安全</td>
-<td>TLS、鉴权、设备信任、风控、审计、端到端加密或传输加密边界</td>
-</tr>
-<tr>
-<td>运维</td>
-<td>连接数、投递延迟、消息堆积、队列消费、热点群、跨区容灾</td>
-</tr>
-</tbody>
-</table>
-<p>AI 编程可以显著降低实现成本，但不会消除分布式系统的产品规则复杂度。要让 AI 稳定产出，必须先把协议、状态机、数据模型和测试不变量写清楚。</p>
-<h2 id="section-1">3. 推荐总体架构</h2>
-<pre class="mermaid">flowchart LR
-    subgraph Client["Flutter 全端客户端"]
-        M["Android / iOS"]
-        D["Windows / macOS / Linux"]
-        W["Web"]
-        L["本地 SQLite 缓存与发送队列"]
-    end
+  <div class="page">
+    <article class="report">
+      <header>
+        <p class="kicker">Project Research Report</p>
+        <h1>Go 后端 + React Native 前端实现全栈全端 IM 即时通信产品的可行性评估</h1>
+        <div class="meta">
+          <span class="pill">报告日期：2026-05-17</span>
+          <span class="pill">评估对象：全栈全端 IM</span>
+          <span class="pill">核心假设：AI 编程深度参与</span>
+          <span class="pill">目标平台：iOS / Android / Web / Windows / macOS / Linux</span>
+        </div>
+      </header>
 
-    subgraph Edge["接入层"]
-        API["REST / gRPC API"]
-        WS["WebSocket Gateway"]
-        Auth["Auth / Token / Device"]
-    end
+      <main>
+        <section>
+          <h2>结论摘要</h2>
+          <p>
+            在“AI 编程显著降低个人或小团队实现成本”的前提下，<strong>Go 后端 + React Native 前端是可行性高、生态成熟、适合移动优先 IM 的技术方案</strong>。它尤其适合希望移动端体验接近原生、Web 产品能力强、前端使用 TypeScript 统一业务逻辑的项目。
+          </p>
+          <p>
+            该方案的综合推荐度为 <span class="score">8.2 / 10</span>。如果产品的一号阵地是 iOS 和 Android，并且 Web 端也很重要，Go + React Native 是很有吸引力的路线；如果目标是一套 UI 几乎无差别覆盖移动、桌面和 Web，Flutter 会更直接；如果只追求最快 MVP，Firebase / Supabase + Expo 会更快。
+          </p>
 
-    subgraph Core["核心服务"]
-        Msg["Message Service"]
-        Sync["Sync Service"]
-        Presence["Presence Service"]
-        Notify["Notification Worker"]
-        Media["Media Service"]
-    end
+          <div class="summary-grid" aria-label="核心评分">
+            <div class="metric">
+              <strong>8.2</strong>
+              <span>综合可行性。适合移动优先、Web 并重的商业 IM。</span>
+            </div>
+            <div class="metric">
+              <strong>强</strong>
+              <span>移动端能力。React Native 在 iOS 和 Android 上生态成熟。</span>
+            </div>
+            <div class="metric">
+              <strong>中高</strong>
+              <span>全端覆盖。Web 和桌面需要组合式策略。</span>
+            </div>
+            <div class="metric">
+              <strong>高</strong>
+              <span>AI 编程友好度。TypeScript + Go 的边界清晰、工具链成熟。</span>
+            </div>
+          </div>
 
-    subgraph Infra["基础设施"]
-        PG["PostgreSQL"]
-        Redis["Redis"]
-        MQ["NATS / Kafka"]
-        Obj["S3 / R2 / MinIO"]
-        Obs["OpenTelemetry / Prometheus / Grafana"]
-        Push["FCM / APNs"]
-    end
+          <div class="callout">
+            <strong>推荐判断：</strong>采用 Go + React Native 时，建议把“全端”定义为移动端使用 React Native，Web 端使用 React Native Web / Expo Web 或 React / Next.js，桌面端按产品深度选择 React Native Windows/macOS、Electron、Tauri 或 PWA。后端仍建议从 Go 模块化单体 + 独立 WebSocket 网关起步。
+          </div>
+        </section>
 
-    M &lt;--> L
-    D &lt;--> L
-    W &lt;--> L
-    L &lt;--> API
-    L &lt;--> WS
-    API --> Auth
-    WS --> Auth
-    API --> Msg
-    WS --> Msg
-    WS --> Presence
-    Msg --> PG
-    Msg --> MQ
-    Sync --> PG
-    Presence --> Redis
-    Notify --> Push
-    Notify --> MQ
-    Media --> Obj
-    Core --> Obs
-    Edge --> Obs
-</pre>
-<p>核心原则：</p>
-<ol>
-<li>实时通道只负责“尽快投递”，不作为唯一事实来源。</li>
-<li>PostgreSQL 中的消息、会话成员、序号和回执才是事实来源。</li>
-<li>Redis 只放在线状态、连接路由、短期限流和热数据，不承载最终一致数据。</li>
-<li>消息投递采用“至少一次 + 幂等去重”，不要宣称真正 exactly-once。</li>
-<li>客户端必须有本地发送队列和本地消息库，避免弱网下体验崩坏。</li>
-</ol>
-<h2 id="section-2">4. 消息投递流程</h2>
-<pre class="mermaid">sequenceDiagram
-    participant A as 发送端 Flutter
-    participant G as WebSocket Gateway
-    participant S as Message Service
-    participant DB as PostgreSQL
-    participant MQ as Message Queue
-    participant B as 接收端 Flutter
-    participant P as Push Worker
+        <section>
+          <h2>评估前提</h2>
+          <ul>
+            <li>AI 编程参与需求拆解、协议定义、Go 服务端、TypeScript 客户端、测试、压测、重构和文档，因此不把人员学习曲线作为主要阻碍。</li>
+            <li>仍然重视工程复杂度，因为 IM 的核心难点不是页面，而是消息顺序、离线同步、多端一致性、推送可靠性、安全和可观测性。</li>
+            <li>“React Native 前端”不等于所有端都由同一个运行时原生承载。官方 React Native 核心强项是 Android 和 iOS，Web、Windows、macOS 等依赖 out-of-tree 平台或相邻 React 生态。</li>
+            <li>第一版产品优先级假设为：账号与设备、稳定收发消息、多端同步、会话列表、离线推送、媒体消息、基础群聊和管理后台。</li>
+          </ul>
+        </section>
 
-    A->>G: send_message(client_msg_id, conversation_id, payload)
-    G->>S: 鉴权后转发发送请求
-    S->>DB: 幂等写入消息与会话序号
-    DB-->>S: message_id + server_seq
-    S->>MQ: 发布 message.created 事件
-    S-->>G: ack_sent(message_id, server_seq)
-    G-->>A: 发送确认
-    MQ-->>G: 投递给在线设备
-    G-->>B: message_created
-    B-->>G: ack_delivered(message_id)
-    G->>S: 更新设备送达状态
-    MQ-->>P: 离线设备通知任务
-    P-->>B: FCM / APNs 推送提醒
-</pre>
-<p>推荐消息语义：</p>
-<table>
-<thead>
-<tr>
-<th>概念</th>
-<th>建议</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>client_msg_id</code></td>
-<td>客户端生成 ULID/UUID，用于发送重试去重</td>
-</tr>
-<tr>
-<td><code>message_id</code></td>
-<td>服务端生成，全局唯一</td>
-</tr>
-<tr>
-<td><code>server_seq</code></td>
-<td>每个 conversation 内单调递增，用于同步和乱序修复</td>
-</tr>
-<tr>
-<td><code>sync_token</code></td>
-<td>客户端增量同步游标，可按用户或设备维度维护</td>
-</tr>
-<tr>
-<td>发送确认</td>
-<td>表示服务端已持久化，不表示对方已收到</td>
-</tr>
-<tr>
-<td>送达确认</td>
-<td>表示目标设备收到，不一定表示用户已读</td>
-</tr>
-<tr>
-<td>已读回执</td>
-<td>用户级或设备级产品策略，需要明确</td>
-</tr>
-</tbody>
-</table>
-<h2 id="rust">5. Rust 后端可行性</h2>
-<h3 id="section-3">5.1 优势</h3>
-<p>Rust 非常适合 IM 后端中的长连接和协议层服务：</p>
-<table>
-<thead>
-<tr>
-<th>优势</th>
-<th>对 IM 的意义</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>无 GC 暂停</td>
-<td>长连接和低延迟消息投递更可控</td>
-</tr>
-<tr>
-<td>内存安全和线程安全</td>
-<td>降低连接状态、缓冲区、并发访问中的安全风险</td>
-</tr>
-<tr>
-<td>Tokio 异步生态</td>
-<td>适合 WebSocket、TCP、队列消费者、后台 worker</td>
-</tr>
-<tr>
-<td>类型系统强</td>
-<td>AI 生成代码更容易被编译器约束，重构时风险更低</td>
-</tr>
-<tr>
-<td>性能和资源占用</td>
-<td>同等机器下能承载更多连接或更低延迟</td>
-</tr>
-<tr>
-<td>适合协议抽象</td>
-<td>消息 envelope、状态机、错误类型可以强约束</td>
-</tr>
-</tbody>
-</table>
-<p>推荐后端技术组合：</p>
-<table>
-<thead>
-<tr>
-<th>层</th>
-<th>推荐</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>Web/API</td>
-<td><code>axum</code> 或 <code>actix-web</code></td>
-</tr>
-<tr>
-<td>异步运行时</td>
-<td><code>tokio</code></td>
-</tr>
-<tr>
-<td>WebSocket</td>
-<td><code>axum</code> WebSocket 或 <code>tokio-tungstenite</code></td>
-</tr>
-<tr>
-<td>内部 RPC</td>
-<td><code>tonic</code> gRPC 或 <code>tarpc</code></td>
-</tr>
-<tr>
-<td>数据库访问</td>
-<td><code>sqlx</code> 优先，复杂领域模型再考虑 SeaORM</td>
-</tr>
-<tr>
-<td>数据库</td>
-<td>PostgreSQL，后期可按热点引入分区或专用存储</td>
-</tr>
-<tr>
-<td>缓存/在线状态</td>
-<td>Redis</td>
-</tr>
-<tr>
-<td>消息队列</td>
-<td>NATS 简洁，Kafka 更适合大规模审计和回放</td>
-</tr>
-<tr>
-<td>可观测性</td>
-<td><code>tracing</code> + OpenTelemetry + Prometheus</td>
-</tr>
-</tbody>
-</table>
-<h3 id="section-4">5.2 风险与限制</h3>
-<table>
-<thead>
-<tr>
-<th>风险</th>
-<th>影响</th>
-<th>应对</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>Rust 生态业务组件少于 Java/Go/Node</td>
-<td>管理后台、SaaS SDK、支付、CMS 等会少一些现成方案</td>
-<td>后台管理可用独立 Web 栈；核心链路坚持 Rust</td>
-</tr>
-<tr>
-<td>异步生命周期和所有权复杂</td>
-<td>AI 生成代码可能在连接管理、任务取消处出错</td>
-<td>写清楚状态机，使用集成测试和负载测试约束</td>
-</tr>
-<tr>
-<td>编译时间较长</td>
-<td>迭代反馈慢于 Go/Node</td>
-<td>模块化 workspace，CI 缓存，核心协议 crate 独立</td>
-</tr>
-<tr>
-<td>招聘和协作成本</td>
-<td>常规团队会受影响</td>
-<td>当前前提是 AI 编程，因此只作为次要因素</td>
-</tr>
-</tbody>
-</table>
-<h3 id="section-5">5.3 后端结论</h3>
-<p>如果目标是长期自研 IM，Rust 是优秀选择。它不是最快做 Demo 的路线，但很适合做“底座”。在 AI 编程前提下，Rust 的编译器反馈反而是优点，因为它能把很多错误提前暴露。</p>
-<h2 id="flutter">6. Flutter 前端可行性</h2>
-<h3 id="section-6">6.1 优势</h3>
-<p>Flutter 适合全端 IM 客户端：</p>
-<table>
-<thead>
-<tr>
-<th>优势</th>
-<th>对 IM 的意义</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>一套 UI 覆盖多端</td>
-<td>移动端、桌面端、Web 的主体验可以统一</td>
-</tr>
-<tr>
-<td>渲染一致</td>
-<td>聊天列表、气泡、表情、图片预览可控</td>
-</tr>
-<tr>
-<td>状态管理成熟</td>
-<td>Riverpod、Bloc 等适合复杂消息状态</td>
-</tr>
-<tr>
-<td>本地存储方案多</td>
-<td>SQLite/Drift、Isar 等可做离线缓存和 outbox</td>
-</tr>
-<tr>
-<td>原生能力可桥接</td>
-<td>推送、文件、分享、通知栏、系统托盘可通过 plugin 或 platform channel</td>
-</tr>
-<tr>
-<td>AI 生成效率高</td>
-<td>组件、页面、状态和 mock 数据生成很高效</td>
-</tr>
-</tbody>
-</table>
-<p>推荐客户端技术组合：</p>
-<table>
-<thead>
-<tr>
-<th>层</th>
-<th>推荐</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>状态管理</td>
-<td>Riverpod 或 Bloc，推荐 Riverpod</td>
-</tr>
-<tr>
-<td>本地数据库</td>
-<td>Drift + SQLite，适合可迁移和可查询的消息库</td>
-</tr>
-<tr>
-<td>网络</td>
-<td>REST/gRPC 用于普通 API，WebSocket 用于实时通道</td>
-</tr>
-<tr>
-<td>序列化</td>
-<td>Protocol Buffers 或 JSON；MVP 可 JSON，长期建议 Protobuf</td>
-</tr>
-<tr>
-<td>安全存储</td>
-<td><code>flutter_secure_storage</code></td>
-</tr>
-<tr>
-<td>推送</td>
-<td>FCM + APNs 能力封装，服务端统一通知任务</td>
-</tr>
-<tr>
-<td>桌面能力</td>
-<td>文件拖拽、通知、托盘、多窗口按平台适配</td>
-</tr>
-</tbody>
-</table>
-<h3 id="section-7">6.2 风险与限制</h3>
-<table>
-<thead>
-<tr>
-<th>风险</th>
-<th>影响</th>
-<th>应对</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>Flutter Web 包体和首屏</td>
-<td>公开 Web IM 首屏可能不如 React 轻</td>
-<td>Web 端作为登录后应用可接受；官网营销页单独做</td>
-</tr>
-<tr>
-<td>桌面原生细节</td>
-<td>托盘、多窗口、快捷键、文件系统体验要补适配</td>
-<td>抽象 platform services，逐平台验收</td>
-</tr>
-<tr>
-<td>推送差异</td>
-<td>iOS/macOS/Android/Web 背景行为不同</td>
-<td>推送只做提醒，打开后用 sync 拉真实消息</td>
-</tr>
-<tr>
-<td>超长列表性能</td>
-<td>聊天历史、图片、富文本可能卡顿</td>
-<td>虚拟列表、分页、缩略图、消息分片渲染</td>
-</tr>
-</tbody>
-</table>
-<h3 id="section-8">6.3 前端结论</h3>
-<p>Flutter 是全端客户端里很强的折中方案。它尤其适合“聊天主界面高度一致、业务复杂但设计统一”的 IM 产品。若产品非常依赖 Web SEO、浏览器首屏性能或桌面深度系统集成，则需要补一套 Web/桌面策略。</p>
-<h2 id="section-9">7. 与其他技术方案对比</h2>
-<h3 id="section-10">7.1 后端方案对比</h3>
-<table>
-<thead>
-<tr>
-<th>后端路线</th>
-<th style="text-align: right;">推荐度</th>
-<th>适合场景</th>
-<th>优点</th>
-<th>主要问题</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>Rust + Tokio + Axum</td>
-<td style="text-align: right;">8.8</td>
-<td>自研 IM、重性能、安全、协议控制</td>
-<td>高性能、低资源、类型安全、适合 AI 编译反馈</td>
-<td>业务生态较少，异步复杂度高</td>
-</tr>
-<tr>
-<td>Go + Gin/Fiber/ConnectRPC</td>
-<td style="text-align: right;">8.5</td>
-<td>快速工程化、高并发服务、团队协作</td>
-<td>简单、部署轻、云原生生态强、并发模型成熟</td>
-<td>类型表达力弱于 Rust，有 GC，复杂状态机约束弱</td>
-</tr>
-<tr>
-<td>Node.js + NestJS + Socket.IO</td>
-<td style="text-align: right;">7.6</td>
-<td>快速 MVP、Web 团队、插件生态优先</td>
-<td>开发快、生态大、实时应用资料多</td>
-<td>CPU 密集和大规模长连接要更谨慎，运行期错误更多</td>
-</tr>
-<tr>
-<td>Java/Kotlin + Spring/Netty</td>
-<td style="text-align: right;">8.0</td>
-<td>企业级、强生态、已有 JVM 体系</td>
-<td>稳定、组件丰富、监控治理成熟</td>
-<td>资源占用较高，样板多，GC 和调优成本</td>
-</tr>
-<tr>
-<td>Elixir + Phoenix Channels</td>
-<td style="text-align: right;">8.2</td>
-<td>实时协作、在线状态、聊天室</td>
-<td>Actor 模型天然适合连接和消息</td>
-<td>生态和人才更小，移动端协议仍需自建</td>
-</tr>
-<tr>
-<td>托管 IM/Realtime 服务</td>
-<td style="text-align: right;">8.0</td>
-<td>极快上线、非核心 IM</td>
-<td>省掉大量后端复杂度</td>
-<td>供应商锁定、成本曲线、协议和数据控制受限</td>
-</tr>
-<tr>
-<td>Matrix Homeserver</td>
-<td style="text-align: right;">7.8</td>
-<td>联邦通信、开放协议、互联互通</td>
-<td>协议成熟、生态现成、支持去中心化</td>
-<td>产品定制和体验控制成本高，协议复杂</td>
-</tr>
-</tbody>
-</table>
-<p>结论：如果不考虑技术学习成本，Rust 是长期质量最强的自研路线；如果追求综合工程效率，Go 是最接近的替代；如果只想快速验证产品，Node/NestJS 或托管 IM 更快。</p>
-<h3 id="section-11">7.2 前端方案对比</h3>
-<table>
-<thead>
-<tr>
-<th>前端路线</th>
-<th style="text-align: right;">推荐度</th>
-<th>覆盖范围</th>
-<th>优点</th>
-<th>主要问题</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>Flutter</td>
-<td style="text-align: right;">8.7</td>
-<td>Android、iOS、Windows、macOS、Linux、Web</td>
-<td>单代码库、UI 一致、移动端和桌面都可做</td>
-<td>Web 首屏和部分平台插件要谨慎</td>
-</tr>
-<tr>
-<td>React Native + Expo</td>
-<td style="text-align: right;">8.0</td>
-<td>Android、iOS、Web，桌面需额外方案</td>
-<td>JS 生态大、移动端成熟、Web 复用较强</td>
-<td>桌面不是主线，全端一致性依赖更多拼装</td>
-</tr>
-<tr>
-<td>Kotlin Multiplatform + Compose</td>
-<td style="text-align: right;">7.8</td>
-<td>Android、iOS、Desktop、Web</td>
-<td>共享业务逻辑强，Android 体验好</td>
-<td>Web 仍较新，生态和全端 UI 成熟度不如 Flutter</td>
-</tr>
-<tr>
-<td>原生多端</td>
-<td style="text-align: right;">7.0</td>
-<td>各平台最佳</td>
-<td>原生体验和系统能力最强</td>
-<td>多代码库，即使用 AI 也会有产品一致性成本</td>
-</tr>
-<tr>
-<td>Tauri + Web 前端</td>
-<td style="text-align: right;">7.4</td>
-<td>Desktop、Mobile，Web 需单独部署</td>
-<td>桌面包小，Rust 结合好，Web 技术栈灵活</td>
-<td>移动端成熟度和复杂 IM UI 体验需验证</td>
-</tr>
-<tr>
-<td>Electron + Web/PWA</td>
-<td style="text-align: right;">7.2</td>
-<td>Web、Desktop，Mobile 另做</td>
-<td>Web 生态极强，桌面成熟</td>
-<td>包体和资源占用高，移动端断层</td>
-</tr>
-</tbody>
-</table>
-<p>结论：全端 IM 的客户端首选 Flutter；如果产品以 Web 为第一入口，则 React/Next.js + React Native/Expo 更合理；如果产品以企业桌面端为主，Tauri/Electron + 移动端单独处理也可行。</p>
-<h2 id="section-12">8. 选型决策流</h2>
-<pre class="mermaid">flowchart TD
-    A["要做 IM 产品"] --> B{"是否必须联邦互通或开放协议生态？"}
-    B -- "是" --> C["优先 Matrix / XMPP 生态，定制客户端和部署"]
-    B -- "否" --> D{"是否只需最快验证业务？"}
-    D -- "是" --> E["托管 IM / Realtime 服务或 Node.js MVP"]
-    D -- "否" --> F{"是否重视长期性能、安全和协议控制？"}
-    F -- "是" --> G["Rust 后端 + Flutter 全端客户端"]
-    F -- "一般" --> H{"是否更看重工程效率和云原生常规经验？"}
-    H -- "是" --> I["Go 后端 + Flutter 客户端"]
-    H -- "否" --> J["Node/NestJS 或 JVM 后端 + Flutter/React Native"]
-</pre>
-<h2 id="section-13">9. 建议落地路线</h2>
-<h3 id="section-14">阶段 0：协议和数据模型先行</h3>
-<p>目标：让 AI 编程有清晰边界。</p>
-<p>产出：</p>
-<table>
-<thead>
-<tr>
-<th>项目</th>
-<th>内容</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>消息协议</td>
-<td>message envelope、消息类型、错误码、ack、receipt、sync token</td>
-</tr>
-<tr>
-<td>状态机</td>
-<td>发送中、已持久化、已送达、已读、失败、重试</td>
-</tr>
-<tr>
-<td>数据模型</td>
-<td>users、devices、conversations、members、messages、receipts</td>
-</tr>
-<tr>
-<td>测试不变量</td>
-<td>幂等、单会话 seq 单调、断线重连不丢消息、重复投递不重复展示</td>
-</tr>
-</tbody>
-</table>
-<h3 id="mvp">阶段 1：MVP</h3>
-<p>功能范围：</p>
-<ol>
-<li>账号、设备登录、刷新 token。</li>
-<li>单聊、群聊基础消息。</li>
-<li>WebSocket 实时收发。</li>
-<li>本地 SQLite 缓存和发送队列。</li>
-<li>离线拉取和未读数。</li>
-<li>图片/文件消息走对象存储。</li>
-<li>FCM/APNs 推送提醒。</li>
-</ol>
-<p>暂不建议一开始做：</p>
-<ol>
-<li>自研端到端加密。</li>
-<li>大规模音视频。</li>
-<li>复杂开放平台。</li>
-<li>过早微服务拆分。</li>
-<li>多地域强一致。</li>
-</ol>
-<h3 id="section-15">阶段 2：规模化</h3>
-<p>重点：</p>
-<table>
-<thead>
-<tr>
-<th>方向</th>
-<th>动作</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>连接扩展</td>
-<td>Gateway 水平扩展，Redis/NATS 做路由与广播</td>
-</tr>
-<tr>
-<td>热点群</td>
-<td>大群消息扇出优化，读扩散/写扩散按规模分级</td>
-</tr>
-<tr>
-<td>存储</td>
-<td>消息表分区，冷历史归档，对象存储生命周期</td>
-</tr>
-<tr>
-<td>搜索</td>
-<td>明文场景用 OpenSearch/Meilisearch；E2EE 场景做本地索引</td>
-</tr>
-<tr>
-<td>运维</td>
-<td>全链路 trace、消息延迟 SLO、队列堆积告警</td>
-</tr>
-</tbody>
-</table>
-<h3 id="section-16">阶段 3：安全和高级能力</h3>
-<p>重点：</p>
-<ol>
-<li>端到端加密采用成熟协议或库，不建议从零设计密码协议。</li>
-<li>多设备密钥同步、设备验证、密钥备份要作为独立项目处理。</li>
-<li>支持撤回、编辑、表情回应、引用回复、消息合并转发。</li>
-<li>企业场景增加审计、合规留存、DLP、管理员策略。</li>
-</ol>
-<h2 id="ai">10. AI 编程下的工程策略</h2>
-<p>AI 编程不是“少设计”，而是“把设计变成更强的机器可执行约束”。</p>
-<p>建议：</p>
-<table>
-<thead>
-<tr>
-<th>策略</th>
-<th>说明</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>先写协议文档</td>
-<td>让 AI 围绕协议生成代码，而不是边写边猜</td>
-</tr>
-<tr>
-<td>核心 crate 独立</td>
-<td><code>im-protocol</code>、<code>im-domain</code>、<code>im-storage</code>、<code>im-gateway</code> 分离</td>
-</tr>
-<tr>
-<td>测试驱动状态机</td>
-<td>对消息排序、幂等、重试、断线恢复写 property test</td>
-</tr>
-<tr>
-<td>端到端模拟器</td>
-<td>用脚本模拟弱网、重复包、乱序、离线、多设备</td>
-</tr>
-<tr>
-<td>禁止隐式全局状态</td>
-<td>长连接管理要明确生命周期和取消逻辑</td>
-</tr>
-<tr>
-<td>小步生成</td>
-<td>每次让 AI 生成一个模块，配合编译和测试反馈</td>
-</tr>
-</tbody>
-</table>
-<p>Rust + Flutter 在 AI 编程中有一个明显优势：Rust 编译器能卡住大量后端错误，Flutter 热重载和组件树能快速验证 UI。但这条路线要求前期文档、测试和状态机写得更认真。</p>
-<h2 id="section-17">11. 推荐技术蓝图</h2>
-<h3 id="section-18">11.1 后端仓库结构</h3>
-<pre><code class="language-text">server/
-  crates/
-    im-protocol/        # 消息 envelope、DTO、错误码、Protobuf/JSON schema
-    im-domain/          # 会话、消息、回执、设备等领域模型
-    im-storage/         # PostgreSQL / Redis 访问
-    im-gateway/         # WebSocket 连接、心跳、鉴权、路由
-    im-api/             # REST/gRPC API
-    im-worker/          # 推送、媒体处理、异步任务
-    im-observability/   # tracing、metrics、logging
-</code></pre>
-<h3 id="flutter-1">11.2 Flutter 仓库结构</h3>
-<pre><code class="language-text">client/
-  lib/
-    app/
-    features/
-      auth/
-      conversations/
-      messages/
-      media/
-      settings/
-    core/
-      protocol/
-      network/
-      local_db/
-      sync/
-      platform_services/
-      observability/
-</code></pre>
-<h3 id="section-19">11.3 基础设施</h3>
-<table>
-<thead>
-<tr>
-<th>组件</th>
-<th>MVP</th>
-<th>扩展阶段</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>数据库</td>
-<td>PostgreSQL</td>
-<td>分区、读副本、归档</td>
-</tr>
-<tr>
-<td>缓存</td>
-<td>Redis</td>
-<td>Redis Cluster</td>
-</tr>
-<tr>
-<td>队列</td>
-<td>NATS</td>
-<td>Kafka/Pulsar</td>
-</tr>
-<tr>
-<td>对象存储</td>
-<td>MinIO/S3/R2</td>
-<td>CDN + 生命周期策略</td>
-</tr>
-<tr>
-<td>部署</td>
-<td>Docker Compose / 单 Kubernetes 集群</td>
-<td>多区部署和灰度</td>
-</tr>
-<tr>
-<td>可观测性</td>
-<td>Prometheus + Grafana + tracing</td>
-<td>SLO、错误预算、容量预测</td>
-</tr>
-</tbody>
-</table>
-<h2 id="section-20">12. 最终建议</h2>
-<p>推荐采用 Rust 后端 + Flutter 前端，但要保持务实边界：</p>
-<ol>
-<li>第一版用模块化单体，不急着微服务化。</li>
-<li>实时通道用 WebSocket，业务 API 用 REST 或 gRPC。</li>
-<li>数据事实源放 PostgreSQL，在线状态放 Redis，异步分发放 NATS/Kafka。</li>
-<li>Flutter 客户端必须有本地缓存、发送队列和同步状态机。</li>
-<li>推送只做唤醒和提醒，真实消息以服务端同步结果为准。</li>
-<li>端到端加密后置，并优先采用成熟协议和库。</li>
-</ol>
-<p>如果目标是做一个严肃、长期、可控的 IM 产品，这条路线是强方案。如果目标只是三周内验证聊天功能是否有人用，托管 IM 或 Node/NestJS MVP 更快。如果目标是开放联邦通信，Matrix 比自研协议更合适。</p>
-<h2 id="section-21">13. 参考资料</h2>
-<ol>
-<li>Flutter 官方支持平台：<a href="https://docs.flutter.dev/reference/supported-platforms" target="_blank" rel="noopener noreferrer">https://docs.flutter.dev/reference/supported-platforms</a></li>
-<li>Flutter 多平台集成：<a href="https://docs.flutter.dev/platform-integration" target="_blank" rel="noopener noreferrer">https://docs.flutter.dev/platform-integration</a></li>
-<li>Rust 官方介绍：<a href="https://www.rust-lang.org/" target="_blank" rel="noopener noreferrer">https://www.rust-lang.org/</a></li>
-<li>Tokio runtime 文档：<a href="https://docs.rs/tokio/latest/tokio/runtime/" target="_blank" rel="noopener noreferrer">https://docs.rs/tokio/latest/tokio/runtime/</a></li>
-<li>Tokio 教程：<a href="https://tokio.rs/tokio/tutorial" target="_blank" rel="noopener noreferrer">https://tokio.rs/tokio/tutorial</a></li>
-<li>gRPC 官方支持语言：<a href="https://grpc.io/docs/languages/" target="_blank" rel="noopener noreferrer">https://grpc.io/docs/languages/</a></li>
-<li>Firebase Cloud Messaging Flutter 文档：<a href="https://firebase.google.com/docs/cloud-messaging/flutter/get-started" target="_blank" rel="noopener noreferrer">https://firebase.google.com/docs/cloud-messaging/flutter/get-started</a></li>
-<li>Apple APNs 远程通知文档：<a href="https://developer.apple.com/documentation/usernotifications" target="_blank" rel="noopener noreferrer">https://developer.apple.com/documentation/usernotifications</a></li>
-<li>Matrix Specification：<a href="https://spec.matrix.org/" target="_blank" rel="noopener noreferrer">https://spec.matrix.org/</a></li>
-<li>XMPP RFC 6120：<a href="https://xmpp.org/rfcs/rfc6120.html" target="_blank" rel="noopener noreferrer">https://xmpp.org/rfcs/rfc6120.html</a></li>
-<li>Go Cloud &amp; Network Services：<a href="https://go.dev/solutions/cloud" target="_blank" rel="noopener noreferrer">https://go.dev/solutions/cloud</a></li>
-<li>Node.js Event Loop：<a href="https://nodejs.org/en/learn/asynchronous-work/event-loop-timers-and-nexttick" target="_blank" rel="noopener noreferrer">https://nodejs.org/en/learn/asynchronous-work/event-loop-timers-and-nexttick</a></li>
-<li>NestJS WebSockets：<a href="https://docs.nestjs.com/websockets/gateways" target="_blank" rel="noopener noreferrer">https://docs.nestjs.com/websockets/gateways</a></li>
-<li>Expo 文档：<a href="https://docs.expo.dev/" target="_blank" rel="noopener noreferrer">https://docs.expo.dev/</a></li>
-<li>Kotlin Multiplatform 概览：<a href="https://kotlinlang.org/docs/multiplatform/kmp-overview.html" target="_blank" rel="noopener noreferrer">https://kotlinlang.org/docs/multiplatform/kmp-overview.html</a></li>
-<li>Tauri 2.0：<a href="https://v2.tauri.app/" target="_blank" rel="noopener noreferrer">https://v2.tauri.app/</a></li>
-</ol>
+        <section>
+          <h2>Go + React Native 方案可行性</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>维度</th>
+                <th>判断</th>
+                <th>理由</th>
+                <th>主要风险</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>移动端客户端</td>
+                <td><span class="tag good">高可行</span></td>
+                <td>React Native 面向 Android 和 iOS 的生态成熟，能复用 React 思维、TypeScript 类型和大量移动组件。</td>
+                <td>复杂列表、富文本、输入法、图片预览、通知和后台任务仍要针对平台做细致优化。</td>
+              </tr>
+              <tr>
+                <td>Web 客户端</td>
+                <td><span class="tag good">高可行</span></td>
+                <td>可选 React Native Web / Expo Web 复用组件，也可用 React / Next.js 构建更典型的 Web IM。</td>
+                <td>React Native Web 不是所有原生组件的无损迁移；复杂 Web SEO、桌面浏览器交互和富文本场景可能需要 Web 专属组件。</td>
+              </tr>
+              <tr>
+                <td>桌面客户端</td>
+                <td><span class="tag warn">中高可行</span></td>
+                <td>Windows/macOS 可考虑 React Native out-of-tree 平台，也可用 Electron/Tauri 包装 React Web 体验。</td>
+                <td>Linux 原生桌面不是 React Native 的主路径；托盘、通知、文件拖拽、快捷键和多窗口需要平台适配。</td>
+              </tr>
+              <tr>
+                <td>实时连接</td>
+                <td><span class="tag good">高可行</span></td>
+                <td>Go 适合高并发连接网关和消息扇出，客户端统一使用 WebSocket 能覆盖移动、Web 和桌面。</td>
+                <td>大量长连接需要心跳、限流、连接路由、断线恢复和内存控制。</td>
+              </tr>
+              <tr>
+                <td>消息一致性</td>
+                <td><span class="tag warn">中高可行</span></td>
+                <td>可通过服务端会话序列号、幂等写入、游标同步、本地 outbox 和事件日志解决。</td>
+                <td>撤回、编辑、已读、群成员变更、弱网重试和多设备状态会快速增加复杂度。</td>
+              </tr>
+              <tr>
+                <td>AI 编程适配</td>
+                <td><span class="tag good">高可行</span></td>
+                <td>Go 和 TypeScript 都有明确类型、格式化工具、测试工具和成熟生态，AI 生成后更容易审查和自动验证。</td>
+                <td>AI 容易把 IM 当普通 CRUD，需要人为先定义协议不变量和端侧状态机。</td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
 
+        <section>
+          <h2>推荐目标架构</h2>
+          <p>
+            第一阶段建议采用“Go 模块化单体 + 独立 WebSocket 网关 + TypeScript 多端客户端”的架构。服务端保持清晰分层，连接层可以单独扩容；客户端共享协议类型、API SDK、状态机和 UI tokens，但允许不同平台拥有专属组件。
+          </p>
+
+          <div class="diagram">
+            <pre class="mermaid">
+flowchart LR
+  subgraph Client["React Native / React 多端前端"]
+    Mobile["React Native iOS / Android"]
+    Web["React Native Web / React Web"]
+    Desktop["RN Windows/macOS 或 Electron/Tauri"]
+    Shared["共享 TypeScript SDK / 状态机 / UI Tokens"]
+  end
+
+  subgraph Edge["接入层"]
+    API["HTTPS API"]
+    WS["WebSocket Gateway"]
+  end
+
+  subgraph Core["Go 后端核心"]
+    Auth["账号与设备认证"]
+    Msg["消息写入与序列号"]
+    Conv["会话与成员关系"]
+    Fanout["消息扇出"]
+    Sync["离线同步与游标"]
+    Push["推送编排"]
+    Admin["管理后台 API"]
+  end
+
+  subgraph Data["数据与基础设施"]
+    PG[("PostgreSQL")]
+    Redis[("Redis")]
+    Queue[("NATS / Kafka")]
+    Obj[("对象存储 + CDN")]
+    Search[("OpenSearch / Meilisearch")]
+  end
+
+  PushVendor["FCM / APNs / Web Push / 厂商推送"]
+  Observe["日志 / 指标 / 链路追踪"]
+
+  Shared --> Mobile
+  Shared --> Web
+  Shared --> Desktop
+  Mobile --> API
+  Web --> API
+  Desktop --> API
+  Mobile <--> WS
+  Web <--> WS
+  Desktop <--> WS
+  API --> Auth
+  API --> Conv
+  WS --> Auth
+  WS --> Msg
+  Msg --> PG
+  Msg --> Queue
+  Queue --> Fanout
+  Fanout --> WS
+  Fanout --> Sync
+  Sync --> PG
+  Conv --> PG
+  Auth --> Redis
+  WS --> Redis
+  Msg --> Obj
+  Msg --> Search
+  Push --> PushVendor
+  Fanout --> Push
+  Auth --> Observe
+  Msg --> Observe
+  WS --> Observe
+  Push --> Observe
+            </pre>
+          </div>
+
+          <h3>消息发送主流程</h3>
+          <div class="diagram">
+            <pre class="mermaid">
+sequenceDiagram
+  autonumber
+  participant C as React Native 客户端
+  participant L as 本地消息库与 Outbox
+  participant G as WebSocket Gateway
+  participant S as Go 消息服务
+  participant DB as PostgreSQL
+  participant Q as 事件队列
+  participant P as 推送服务
+
+  C->>L: 写入本地待发送消息
+  C->>G: SendMessage(client_msg_id, conv_id, payload)
+  G->>S: 鉴权后的消息写入请求
+  S->>DB: 幂等写入并分配 server_msg_id / seq
+  DB-->>S: 写入成功
+  S->>Q: 发布 MessageCreated 事件
+  S-->>G: ACK(server_msg_id, seq)
+  G-->>C: 发送确认
+  C->>L: 更新本地消息为已发送
+  Q->>G: 扇出给在线设备
+  G-->>C: 新消息 / 自己其他端同步
+  Q->>P: 离线设备推送任务
+            </pre>
+          </div>
+        </section>
+
+        <section>
+          <h2>前端全端策略</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>端</th>
+                <th>建议实现</th>
+                <th>复用重点</th>
+                <th>注意事项</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>iOS / Android</td>
+                <td>React Native + TypeScript，MVP 可使用 Expo，复杂原生能力用 Expo prebuild 或 RN CLI。</td>
+                <td>API SDK、消息状态机、缓存层、业务 hooks、UI 组件。</td>
+                <td>通知、后台保活、相册、文件、音频、分享、输入法和性能需要真机测试。</td>
+              </tr>
+              <tr>
+                <td>Web</td>
+                <td>React Native Web / Expo Web，或 React / Next.js 独立 Web 客户端。</td>
+                <td>协议类型、业务 hooks、状态机、设计 token、部分组件。</td>
+                <td>复杂 Web IM 常需要键盘快捷键、拖拽、富文本、浏览器通知和多窗口适配。</td>
+              </tr>
+              <tr>
+                <td>Windows / macOS</td>
+                <td>轻量桌面可用 Electron/Tauri 包装 Web；深度原生可调研 React Native Windows/macOS。</td>
+                <td>Web 端 UI、TypeScript SDK、本地缓存和通知编排。</td>
+                <td>系统托盘、全局快捷键、自动更新、文件拖拽和多窗口会影响技术选择。</td>
+              </tr>
+              <tr>
+                <td>Linux</td>
+                <td>优先 PWA / Electron / Tauri；不建议第一版追求 React Native 原生 Linux。</td>
+                <td>React Web 体验和业务逻辑。</td>
+                <td>Linux 桌面用户量、发行版差异和打包成本要与商业价值匹配。</td>
+              </tr>
+              <tr>
+                <td>管理后台</td>
+                <td>React / Next.js / Vite Admin，独立于移动客户端。</td>
+                <td>OpenAPI 类型、权限模型、审计日志模型。</td>
+                <td>后台是高密度运营工具，不适合照搬移动端 UI。</td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+
+        <section>
+          <h2>关键技术选择</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>模块</th>
+                <th>建议选择</th>
+                <th>原因</th>
+                <th>可替换项</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>实时协议</td>
+                <td>WebSocket 优先</td>
+                <td>移动端、Web 和桌面都可用；调试、代理、负载均衡经验成熟。</td>
+                <td>gRPC 双向流、MQTT、SSE；浏览器和移动后台限制会影响统一性。</td>
+              </tr>
+              <tr>
+                <td>接口协议</td>
+                <td>OpenAPI + JSON 起步</td>
+                <td>AI 生成 Go 服务端、TypeScript SDK 和测试较稳定，排错容易。</td>
+                <td>Protobuf、ConnectRPC、GraphQL。</td>
+              </tr>
+              <tr>
+                <td>前端框架</td>
+                <td>React Native + TypeScript，Web 端按复杂度选择 RN Web 或 React Web。</td>
+                <td>React 生态庞大，AI 生成效率高，移动端和 Web 端可以共享大量业务层。</td>
+                <td>Flutter、Swift/Kotlin 原生、Kotlin Multiplatform。</td>
+              </tr>
+              <tr>
+                <td>客户端状态</td>
+                <td>Zustand / Redux Toolkit + TanStack Query + 本地数据库</td>
+                <td>IM 需要本地 outbox、增量同步、离线查询和弱网恢复，不应只依赖内存状态。</td>
+                <td>MobX、Jotai、WatermelonDB、SQLite、Realm。</td>
+              </tr>
+              <tr>
+                <td>消息存储</td>
+                <td>PostgreSQL 分区表</td>
+                <td>早期足够可靠，事务、索引、备份、迁移和审计成熟。</td>
+                <td>ScyllaDB、Cassandra、CockroachDB、TiDB。</td>
+              </tr>
+              <tr>
+                <td>在线状态</td>
+                <td>Redis</td>
+                <td>适合 presence、连接映射、短期游标、限流和热点缓存。</td>
+                <td>KeyDB、Dragonfly、etcd，或网关内存状态 + 事件同步。</td>
+              </tr>
+              <tr>
+                <td>事件总线</td>
+                <td>NATS JetStream 起步</td>
+                <td>轻量、Go 生态友好，适合消息事件和服务间异步。</td>
+                <td>Kafka、Pulsar、RabbitMQ、Redis Streams。</td>
+              </tr>
+              <tr>
+                <td>媒体文件</td>
+                <td>对象存储 + CDN</td>
+                <td>消息服务只保存元数据，上传下载、转码和扩容解耦。</td>
+                <td>S3、MinIO、Cloudflare R2、阿里云 OSS、腾讯云 COS。</td>
+              </tr>
+              <tr>
+                <td>推送</td>
+                <td>FCM + APNs + Web Push + 国内厂商推送</td>
+                <td>移动系统后台限制决定了离线消息必须接入平台推送。</td>
+                <td>Expo Push、OneSignal、自研推送编排层。</td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+
+        <section>
+          <h2>方案对比</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>技术方案</th>
+                <th>适合场景</th>
+                <th>优势</th>
+                <th>短板</th>
+                <th>推荐度</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Go + React Native</strong></td>
+                <td>移动优先、自研 IM、Web 也很重要、希望使用 TypeScript 前端生态</td>
+                <td>移动体验好；React 生态大；Web 可用 React 技术栈；Go 后端稳定简洁。</td>
+                <td>真正全端需要组合策略；桌面和 Web 不能完全当作移动端平移。</td>
+                <td><span class="tag good">默认推荐</span></td>
+              </tr>
+              <tr>
+                <td>Go + Flutter</td>
+                <td>强调一套 UI 覆盖移动、桌面和 Web，设计系统高度统一</td>
+                <td>跨端一致性强；客户端单工程感更好；桌面覆盖路径更直接。</td>
+                <td>Web 端生态、SEO、复杂 DOM 交互和前端生态复用不如 React 路线。</td>
+                <td><span class="tag good">全端一致强</span></td>
+              </tr>
+              <tr>
+                <td>Go + React / Next.js + 原生 App</td>
+                <td>Web 是第一产品面，移动端要求极致原生体验</td>
+                <td>Web 能力最强；移动端可深度系统集成；后端仍保持 Go 的稳定性。</td>
+                <td>多套客户端代码，AI 可以提速但仍会增加产品一致性成本。</td>
+                <td><span class="tag warn">Web 优先</span></td>
+              </tr>
+              <tr>
+                <td>Node.js / TypeScript 全栈 + React Native</td>
+                <td>最快原型、团队希望前后端同语言、业务迭代极快</td>
+                <td>类型共享和 AI 生成速度强，生态极大。</td>
+                <td>长连接高并发需要更谨慎的进程模型和资源治理。</td>
+                <td><span class="tag warn">最快原型</span></td>
+              </tr>
+              <tr>
+                <td>Elixir / Phoenix + React Native</td>
+                <td>实时连接、频道模型和 Presence 是第一优先级</td>
+                <td>Phoenix Channels 和 BEAM 并发模型非常适合实时系统。</td>
+                <td>AI 代码生态和人才池相对小，业务系统集成不如 Go 普遍。</td>
+                <td><span class="tag good">实时强选项</span></td>
+              </tr>
+              <tr>
+                <td>Java / Kotlin + Spring + React Native</td>
+                <td>企业合规、复杂后台、传统组织协作</td>
+                <td>工程治理、安全、事务、监控、审计和生态非常成熟。</td>
+                <td>服务端更重，早期迭代速度和部署简洁度不如 Go。</td>
+                <td><span class="tag warn">企业稳健</span></td>
+              </tr>
+              <tr>
+                <td>Firebase / Supabase + Expo</td>
+                <td>MVP、验证需求、低运维、用户规模尚不确定</td>
+                <td>认证、实时、存储、推送、权限开箱即用，AI 搭建速度很快。</td>
+                <td>复杂消息同步、自定义协议、成本控制、迁移和供应商绑定需要提前考虑。</td>
+                <td><span class="tag good">MVP 强烈推荐</span></td>
+              </tr>
+              <tr>
+                <td>Matrix 协议 + Element 生态二开</td>
+                <td>开放协议、联邦通信、端到端加密和互通优先</td>
+                <td>协议和生态完整，减少从零设计 IM 协议的风险。</td>
+                <td>产品差异化会被协议约束，二开复杂度不低，服务端和客户端都较重。</td>
+                <td><span class="tag warn">协议优先</span></td>
+              </tr>
+              <tr>
+                <td>XMPP / MQTT 作为消息底座</td>
+                <td>IoT、已有协议生态、轻量发布订阅或传统 IM 互通</td>
+                <td>协议成熟，MQTT 对弱网和 pub/sub 友好，XMPP 有 IM 历史积累。</td>
+                <td>现代产品能力仍要大量补齐，客户端体验和扩展语义需要设计。</td>
+                <td><span class="tag warn">特定场景</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+
+        <section>
+          <h2>AI 编程视角下的取舍</h2>
+          <p>
+            AI 编程会显著降低“写代码”的成本，但不会自动消除“系统不变量”的成本。React Native 路线的优势是 TypeScript 生态对 AI 非常友好，页面、hooks、SDK、mock、测试和端到端用例都能快速生成；风险是 AI 容易把移动端、Web 端、桌面端的系统差异抹平。
+          </p>
+
+          <table>
+            <thead>
+              <tr>
+                <th>适合交给 AI 加速</th>
+                <th>需要人工先定规则</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>OpenAPI、TypeScript SDK、React Native 页面、React Web 页面、组件变体、状态 hooks、Go CRUD、数据库迁移和管理后台。</td>
+                <td>消息 ID 规则、会话序列号、幂等策略、离线补偿、设备模型、权限模型、推送语义和端侧状态机。</td>
+              </tr>
+              <tr>
+                <td>模拟客户端、弱网重试测试、协议兼容性测试、Storybook、Detox / Playwright 用例、CI 配置和日志字段整理。</td>
+                <td>何时确认消息成功、撤回/编辑如何同步、已读回执粒度、群成员变更如何影响历史消息。</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div class="diagram">
+            <pre class="mermaid">
+flowchart TD
+  A["产品需求"] --> B["定义协议与端侧状态机"]
+  B --> C["生成 Go API / TS SDK / RN 页面"]
+  C --> D["模拟客户端与自动化测试"]
+  D --> E{"消息不变量是否被破坏？"}
+  E -- "是" --> B
+  E -- "否" --> F["压测、真机测试、灰度"]
+  F --> G["上线与持续迭代"]
+  G --> B
+            </pre>
+          </div>
+        </section>
+
+        <section>
+          <h2>落地路线</h2>
+          <h3>阶段 1：MVP，验证核心闭环</h3>
+          <ul>
+            <li>React Native：登录、会话列表、单聊、群聊、图片/文件、离线缓存、基础设置。</li>
+            <li>Web：用 React Native Web / Expo Web 快速复用，或用 React / Vite 做轻量 Web IM。</li>
+            <li>Go：账号、设备、会话、消息、WebSocket、离线拉取、推送编排、后台管理。</li>
+            <li>数据：PostgreSQL、Redis、对象存储；暂不引入复杂微服务和多区域架构。</li>
+            <li>质量：协议契约测试、模拟多端客户端、弱网重试测试、消息幂等测试。</li>
+          </ul>
+
+          <h3>阶段 2：商业化，补齐可靠性</h3>
+          <ul>
+            <li>移动端补齐离线 outbox、本地消息库、后台推送唤醒、附件上传恢复和真机性能优化。</li>
+            <li>Web 端补齐键盘快捷键、拖拽上传、浏览器通知、多窗口和大屏布局。</li>
+            <li>连接网关独立扩缩容，加入连接迁移、限流、黑名单、心跳和断线恢复。</li>
+            <li>引入事件队列，拆分消息写入、在线扇出、离线推送、搜索索引和媒体扫描。</li>
+          </ul>
+
+          <h3>阶段 3：规模化，处理高并发和复杂产品形态</h3>
+          <ul>
+            <li>按用户、会话或租户做消息分片；根据热点群引入专门的 fanout 策略。</li>
+            <li>多区域部署，区分本地写入、跨区同步、只读副本和灾备恢复。</li>
+            <li>如需要语音/视频，单独建设 WebRTC 信令、SFU、通话推送和质量监控。</li>
+            <li>如需要强隐私，设计端到端加密、密钥备份、多设备密钥交换和搜索限制。</li>
+          </ul>
+        </section>
+
+        <section>
+          <h2>风险清单</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>风险</th>
+                <th>影响</th>
+                <th>应对策略</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>把 React Native 误认为天然全端一致</td>
+                <td>Web 和桌面体验会出现大量细节欠账。</td>
+                <td>从第一天建立平台矩阵：共享业务层，允许 UI 和系统能力按平台分叉。</td>
+              </tr>
+              <tr>
+                <td>React Native 列表和富文本性能不足</td>
+                <td>大群、长历史、图片密集聊天会卡顿。</td>
+                <td>优先选成熟虚拟列表，消息项固定高度策略，图片懒加载，真机性能门禁。</td>
+              </tr>
+              <tr>
+                <td>消息顺序和多端同步设计不足</td>
+                <td>用户会看到重复、乱序、丢消息、状态不一致。</td>
+                <td>服务端统一分配会话 seq；客户端使用游标拉取；所有写入使用 client_msg_id 幂等。</td>
+              </tr>
+              <tr>
+                <td>推送受系统限制</td>
+                <td>离线消息不稳定，尤其是 iOS 后台和国内 Android 厂商通道。</td>
+                <td>抽象推送编排层，FCM/APNs 是基础；国内市场另接厂商推送。</td>
+              </tr>
+              <tr>
+                <td>热点大群扇出压力</td>
+                <td>在线连接、数据库写入和推送任务被放大。</td>
+                <td>区分普通群和大群；大群采用读扩散、批量游标、限频和延迟聚合。</td>
+              </tr>
+              <tr>
+                <td>AI 生成代码风格不一致</td>
+                <td>长期维护成本上升。</td>
+                <td>建立项目模板、协议规范、lint、格式化、测试门禁和架构边界文档。</td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+
+        <section>
+          <h2>最终建议</h2>
+          <ol>
+            <li>如果目标是移动优先、Web 并重的自研 IM，选择 <strong>Go + React Native</strong> 作为主方案。</li>
+            <li>第一版把 React Native 聚焦在 iOS/Android，把 Web 作为 React Native Web / React Web 的独立交付面，不强行追求所有端完全同构。</li>
+            <li>服务端从 Go 模块化单体开始，但提前划清连接网关、消息服务、推送服务、媒体服务和搜索服务的边界。</li>
+            <li>用 AI 编程扩大实现速度，用协议文档、模拟客户端、真机测试和自动化测试守住正确性。</li>
+            <li>如果“单套 UI 覆盖所有端”的价值高于 React 生态复用，优先考虑 Go + Flutter；如果只为验证需求，优先考虑 Firebase / Supabase + Expo。</li>
+          </ol>
+        </section>
+
+        <section>
+          <h2>参考资料</h2>
+          <p class="small">以下资料主要用于确认平台能力、协议定位和替代方案边界，均为官方文档或标准资料。</p>
+          <ol class="sources">
+            <li><a href="https://reactnative.dev/docs/platform">React Native Platform API</a></li>
+            <li><a href="https://reactnative.dev/docs/out-of-tree-platforms">React Native Out-of-Tree Platforms</a></li>
+            <li><a href="https://docs.expo.dev/workflow/web/">Expo: Develop websites</a></li>
+            <li><a href="https://go.dev/doc/effective_go#concurrency">Effective Go: Concurrency</a></li>
+            <li><a href="https://go.dev/tour/concurrency/1">A Tour of Go: Goroutines</a></li>
+            <li><a href="https://www.rfc-editor.org/rfc/rfc6455">RFC 6455: The WebSocket Protocol</a></li>
+            <li><a href="https://firebase.google.com/docs/cloud-messaging">Firebase Cloud Messaging</a></li>
+            <li><a href="https://supabase.com/docs/guides/realtime">Supabase Realtime</a></li>
+            <li><a href="https://hexdocs.pm/phoenix/channels.html">Phoenix Channels</a></li>
+            <li><a href="https://grpc.io/docs/what-is-grpc/core-concepts/">gRPC Core Concepts</a></li>
+            <li><a href="https://spec.matrix.org/latest/">Matrix Specification</a></li>
+            <li><a href="https://xmpp.org/about/technology-overview/">XMPP Technology Overview</a></li>
+            <li><a href="https://mqtt.org/">MQTT.org</a></li>
+            <li><a href="https://www.electronjs.org/docs/latest/">Electron Documentation</a></li>
+            <li><a href="https://tauri.app/">Tauri</a></li>
+          </ol>
+        </section>
+      </main>
     </article>
-  </main>
+  </div>
+
   <script type="module">
-    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
-    mermaid.initialize({ startOnLoad: true, theme: 'default', securityLevel: 'loose' });
+    import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: "base",
+      securityLevel: "strict",
+      themeVariables: {
+        fontFamily: "-apple-system, BlinkMacSystemFont, Segoe UI, Microsoft YaHei, sans-serif",
+        primaryColor: "#eef3f8",
+        primaryTextColor: "#172033",
+        primaryBorderColor: "#176b87",
+        lineColor: "#6b7280",
+        secondaryColor: "#f7fbfc",
+        tertiaryColor: "#ffffff"
+      }
+    });
   </script>
 </body>
 </html>
