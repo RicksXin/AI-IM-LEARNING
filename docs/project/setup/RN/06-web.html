@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>在 Web 平台运行 RN 项目</title>
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+  <div class="page">
+    <article class="doc">
+      <header>
+        <p class="kicker">Step 6</p>
+        <h1>在 Web 平台运行 React Native 项目</h1>
+        <div class="meta">
+          <span class="pill">推荐：Expo Web</span>
+          <span class="pill">底层：React Native Web</span>
+          <span class="pill"><a href="./index.html">返回目录</a></span>
+        </div>
+      </header>
+
+      <main>
+        <section>
+          <h2>最快方式：Expo</h2>
+          <pre><code class="language-powershell">cd D:\Developer\Project\Personal\LearningAI
+npx create-expo-app RNWebDemo
+cd RNWebDemo
+npx expo start --web</code></pre>
+
+          <p>浏览器会打开本地页面。如果没有自动打开，按终端提示访问本地地址。</p>
+        </section>
+
+        <section>
+          <h2>已有 Expo 项目</h2>
+          <pre><code class="language-powershell">cd RNWebDemo
+npx expo install react-dom react-native-web @expo/metro-runtime
+npx expo start --web</code></pre>
+        </section>
+
+        <section>
+          <h2>已有裸 RN 项目</h2>
+          <p>裸 RN 项目也能接 React Native Web，但配置会更复杂。初学阶段建议单独用 Expo 验证 Web 页面，等页面结构稳定后再统一工程。</p>
+          <pre><code class="language-powershell">npm install react-dom react-native-web</code></pre>
+        </section>
+
+        <section>
+          <h2>注意事项</h2>
+          <ul>
+            <li>不是所有原生组件都能无损运行到 Web。</li>
+            <li>文件选择、通知、拖拽、键盘快捷键通常要写 Web 专属逻辑。</li>
+            <li>IM 项目的 Web 端更像桌面网页，布局和移动端可以共享业务逻辑，但不必强求完全同 UI。</li>
+          </ul>
+        </section>
+      </main>
+    </article>
+  </div>
+</body>
+</html>

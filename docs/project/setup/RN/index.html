@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>React Native 开发环境搭建教程</title>
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+  <div class="page">
+    <article class="doc">
+      <header>
+        <p class="kicker">React Native Setup</p>
+        <h1>React Native 开发环境搭建教程</h1>
+        <div class="meta">
+          <span class="pill">面向初学者</span>
+          <span class="pill">Windows / macOS / Linux</span>
+          <span class="pill">Android / iOS / Windows / Web / HarmonyOS</span>
+          <span class="pill">更新日期：2026-05-17</span>
+        </div>
+      </header>
+
+      <main>
+        <section>
+          <h2>怎么读</h2>
+          <p>
+            先按你的电脑系统完成基础环境，再按目标平台运行项目。初学阶段推荐先跑通 Android 或 Web，再挑战 iOS、Windows 桌面和 HarmonyOS。
+          </p>
+          <div class="callout">
+            <strong>工具链提醒：</strong>React Native 官方当前要求 Node 22.11+；Android 原生构建推荐 JDK 17；iOS 构建必须使用 macOS + Xcode。
+          </div>
+        </section>
+
+        <section>
+          <h2>教程列表</h2>
+          <div class="grid">
+            <div class="card">
+              <h3><a href="./01-windows.html">1. Windows 系统中安装和配置 RN</a></h3>
+              <p>适合你当前 Windows 电脑。包含 winget、Node、JDK、Android Studio、环境变量。</p>
+            </div>
+            <div class="card">
+              <h3><a href="./02-macos-linux.html">2. macOS / Linux 系统中安装和配置 RN</a></h3>
+              <p>macOS 可跑 Android 和 iOS；Linux 通常只跑 Android 和 Web。</p>
+            </div>
+            <div class="card">
+              <h3><a href="./03-android.html">3. 在 Android 平台运行 RN 项目</a></h3>
+              <p>创建项目、启动 Metro、打开模拟器、运行到 Android。</p>
+            </div>
+            <div class="card">
+              <h3><a href="./04-ios-macos.html">4. 在 iOS / macOS 平台运行 RN 项目</a></h3>
+              <p>iOS 真机/模拟器、CocoaPods、以及 React Native macOS 桌面端。</p>
+            </div>
+            <div class="card">
+              <h3><a href="./05-windows-platform.html">5. 在 Windows 平台运行 RN 项目</a></h3>
+              <p>React Native Windows，适合做 Windows 桌面应用。</p>
+            </div>
+            <div class="card">
+              <h3><a href="./06-web.html">6. 在 Web 平台运行 RN 项目</a></h3>
+              <p>推荐使用 Expo / React Native Web 快速跑 Web。</p>
+            </div>
+            <div class="card">
+              <h3><a href="./07-harmonyos.html">7. 在 HarmonyOS 平台运行 RN 项目</a></h3>
+              <p>使用 OpenHarmony SIG / React Native OpenHarmony 生态，适合单独验证。</p>
+            </div>
+          </div>
+        </section>
+
+        <section>
+          <h2>推荐路线</h2>
+          <ol>
+            <li>Windows 用户：读 1 和 3，先跑 Android。</li>
+            <li>macOS 用户：读 2、3、4，可以跑 Android 和 iOS。</li>
+            <li>想快速看页面：读 6，先跑 Web。</li>
+            <li>想做桌面端：Windows 读 5，macOS 读 4。</li>
+            <li>想做 HarmonyOS：读 7，单独准备 DevEco Studio 和 HarmonyOS SDK。</li>
+          </ol>
+        </section>
+
+        <section>
+          <h2>参考资料</h2>
+          <ul>
+            <li><a href="https://reactnative.dev/docs/set-up-your-environment">React Native 官方环境搭建</a></li>
+            <li><a href="https://reactnative.dev/docs/getting-started-without-a-framework">React Native Without a Framework</a></li>
+            <li><a href="https://docs.expo.dev/workflow/web/">Expo Web 文档</a></li>
+            <li><a href="https://microsoft.github.io/react-native-windows/">React Native Windows</a></li>
+            <li><a href="https://microsoft.github.io/react-native-macos/">React Native macOS</a></li>
+            <li><a href="https://gitee.com/openharmony-sig/ohos_react_native">OpenHarmony SIG ohos_react_native</a></li>
+          </ul>
+        </section>
+      </main>
+    </article>
+  </div>
+</body>
+</html>

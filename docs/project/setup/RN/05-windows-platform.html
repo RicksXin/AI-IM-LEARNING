@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>在 Windows 平台运行 RN 项目</title>
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+  <div class="page">
+    <article class="doc">
+      <header>
+        <p class="kicker">Step 5</p>
+        <h1>在 Windows 平台运行 React Native 项目</h1>
+        <div class="meta">
+          <span class="pill">目标：Windows 桌面应用</span>
+          <span class="pill">技术：React Native Windows</span>
+          <span class="pill"><a href="./index.html">返回目录</a></span>
+        </div>
+      </header>
+
+      <main>
+        <section>
+          <h2>先理解边界</h2>
+          <p>
+            React Native Windows 是桌面端适配，不是 Android 的替代品。它需要 Visual Studio、Windows SDK 和 C++ 构建工具。桌面端版本可能落后于 RN 核心版本，按官方文档选择匹配版本。
+          </p>
+        </section>
+
+        <section>
+          <h2>安装依赖</h2>
+          <p>推荐用官方依赖脚本检查和安装。用管理员 PowerShell 执行：</p>
+          <pre><code class="language-powershell">npx react-native-windows-init --help
+npx @react-native-windows/cli@latest init-windows --help</code></pre>
+
+          <p>同时确认已安装：</p>
+          <ul>
+            <li>Visual Studio 2022</li>
+            <li>Desktop development with C++ 工作负载</li>
+            <li>Windows 10/11 SDK</li>
+            <li>Node.js 22.11+</li>
+          </ul>
+        </section>
+
+        <section>
+          <h2>给已有 RN 项目加 Windows</h2>
+          <pre><code class="language-powershell">cd RNDemo
+npx @react-native-windows/cli@latest init-windows --overwrite
+npx react-native run-windows</code></pre>
+
+          <p>如果你使用旧版 RNW 文档，可能会看到 <code>npx react-native-windows-init --overwrite</code>。新项目优先按官方当前文档使用 <code>init-windows</code>。</p>
+          <p>如果命令提示版本不匹配，按提示安装对应版本的 <code>react-native-windows</code>。</p>
+        </section>
+
+        <section>
+          <h2>常见问题</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>问题</th>
+                <th>处理</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>找不到 MSBuild</td>
+                <td>安装 Visual Studio 2022 和 C++ 工作负载。</td>
+              </tr>
+              <tr>
+                <td>RNW 版本不兼容</td>
+                <td>查看 React Native Windows 官方版本矩阵。</td>
+              </tr>
+              <tr>
+                <td>首次构建很慢</td>
+                <td>正常现象，Windows 原生构建依赖较多。</td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+      </main>
+    </article>
+  </div>
+</body>
+</html>

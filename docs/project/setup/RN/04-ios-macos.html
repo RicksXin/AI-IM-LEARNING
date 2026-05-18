@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>在 iOS / macOS 平台运行 RN 项目</title>
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+  <div class="page">
+    <article class="doc">
+      <header>
+        <p class="kicker">Step 4</p>
+        <h1>在 iOS / macOS 平台运行 React Native 项目</h1>
+        <div class="meta">
+          <span class="pill">必须使用 macOS</span>
+          <span class="pill">iOS：Xcode + CocoaPods</span>
+          <span class="pill"><a href="./index.html">返回目录</a></span>
+        </div>
+      </header>
+
+      <main>
+        <section>
+          <h2>运行到 iOS 模拟器</h2>
+          <pre><code class="language-bash">cd RNDemo
+cd ios
+pod install
+cd ..
+npm run ios</code></pre>
+
+          <p>如果你想指定模拟器：</p>
+          <pre><code class="language-bash">npx react-native run-ios --simulator "iPhone 16"</code></pre>
+        </section>
+
+        <section>
+          <h2>运行到 iPhone 真机</h2>
+          <ol>
+            <li>用 USB 连接 iPhone。</li>
+            <li>打开 <code>ios/RNDemo.xcworkspace</code>。</li>
+            <li>在 Xcode 中选择你的真机。</li>
+            <li>设置 Apple Developer Team。</li>
+            <li>点击 Run。</li>
+          </ol>
+          <div class="callout warning">
+            <strong>新手建议：</strong>先跑模拟器，真机签名失败是常见问题，不要一开始就卡在证书上。
+          </div>
+        </section>
+
+        <section>
+          <h2>运行到 macOS 桌面</h2>
+          <p>React Native macOS 是 Microsoft 维护的桌面端适配。桌面端版本可能落后于 React Native 核心版本，创建前先查看官方版本表。</p>
+          <pre><code class="language-bash">cd RNDemo
+npx react-native-macos-init
+npx react-native run-macos</code></pre>
+        </section>
+
+        <section>
+          <h2>常见问题</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>问题</th>
+                <th>处理</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>pod install</code> 失败</td>
+                <td>确认 CocoaPods 已安装，必要时运行 <code>pod repo update</code>。</td>
+              </tr>
+              <tr>
+                <td>Xcode 命令行工具异常</td>
+                <td>运行 <code>sudo xcode-select -s /Applications/Xcode.app</code>。</td>
+              </tr>
+              <tr>
+                <td>真机签名失败</td>
+                <td>在 Xcode 的 Signing & Capabilities 里选择开发团队。</td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+      </main>
+    </article>
+  </div>
+</body>
+</html>

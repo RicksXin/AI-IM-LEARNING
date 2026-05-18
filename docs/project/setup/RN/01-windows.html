@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Windows 系统中安装和配置 RN</title>
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+  <div class="page">
+    <article class="doc">
+      <header>
+        <p class="kicker">Step 1</p>
+        <h1>Windows 系统中安装和配置 React Native</h1>
+        <div class="meta">
+          <span class="pill">适合：Windows 10/11 64 位</span>
+          <span class="pill">目标：Android / Web / Windows 桌面</span>
+          <span class="pill"><a href="./index.html">返回目录</a></span>
+        </div>
+      </header>
+
+      <main>
+        <section>
+          <h2>需要安装什么</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>工具</th>
+                <th>作用</th>
+                <th>建议</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Node.js</td>
+                <td>运行 Metro、安装 npm 依赖。</td>
+                <td>Node 22.11+。</td>
+              </tr>
+              <tr>
+                <td>JDK 17</td>
+                <td>Android 构建需要 Java。</td>
+                <td>Microsoft OpenJDK 17。</td>
+              </tr>
+              <tr>
+                <td>Android Studio</td>
+                <td>安装 Android SDK、模拟器。</td>
+                <td>安装 Android SDK Platform 和 Emulator。</td>
+              </tr>
+              <tr>
+                <td>Git / VS Code</td>
+                <td>代码管理和编辑器。</td>
+                <td>你当前机器已安装。</td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+
+        <section>
+          <h2>一键安装基础工具</h2>
+          <p>用 PowerShell 执行。Android Studio 安装后还需要手动打开一次，安装 SDK。</p>
+          <pre><code class="language-powershell">winget install OpenJS.NodeJS.LTS -e
+winget install Microsoft.OpenJDK.17 -e
+winget install Google.AndroidStudio -e
+winget install Git.Git -e
+winget install Microsoft.VisualStudioCode -e</code></pre>
+
+          <p>安装后关闭 PowerShell，重新打开，再检查：</p>
+          <pre><code class="language-powershell">node -v
+npm -v
+java -version
+git --version</code></pre>
+        </section>
+
+        <section>
+          <h2>配置 Android SDK 环境变量</h2>
+          <p>Android Studio 默认 SDK 路径通常是 <code>%LOCALAPPDATA%\Android\Sdk</code>。</p>
+          <pre><code class="language-powershell">$androidHome = "$env:LOCALAPPDATA\Android\Sdk"
+[Environment]::SetEnvironmentVariable("ANDROID_HOME", $androidHome, "User")
+
+$paths = @(
+  "$androidHome\platform-tools",
+  "$androidHome\emulator",
+  "$androidHome\cmdline-tools\latest\bin"
+)
+
+$userPath = [Environment]::GetEnvironmentVariable("Path", "User")
+foreach ($path in $paths) {
+  if ($userPath -notlike "*$path*") {
+    $userPath = "$userPath;$path"
+  }
+}
+[Environment]::SetEnvironmentVariable("Path", $userPath, "User")</code></pre>
+
+          <p>重新打开 PowerShell 后检查：</p>
+          <pre><code class="language-powershell">adb version
+emulator -version</code></pre>
+        </section>
+
+        <section>
+          <h2>创建 RN 项目</h2>
+          <pre><code class="language-powershell">cd D:\Developer\Project\Personal\LearningAI
+npx @react-native-community/cli@latest init RNDemo</code></pre>
+
+          <p>如果安装依赖很慢，可以临时切换 npm 镜像：</p>
+          <pre><code class="language-powershell">npm config set registry https://registry.npmmirror.com</code></pre>
+        </section>
+
+        <section>
+          <h2>常见检查</h2>
+          <pre><code class="language-powershell">cd RNDemo
+npx react-native doctor</code></pre>
+          <p>看到 Android SDK 或 JDK 报错时，优先回到 Android Studio 的 SDK Manager 检查 SDK 是否安装完整。</p>
+        </section>
+      </main>
+    </article>
+  </div>
+</body>
+</html>

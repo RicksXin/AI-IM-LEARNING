@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>macOS / Linux 系统中安装和配置 RN</title>
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+  <div class="page">
+    <article class="doc">
+      <header>
+        <p class="kicker">Step 2</p>
+        <h1>macOS / Linux 系统中安装和配置 React Native</h1>
+        <div class="meta">
+          <span class="pill">macOS：Android + iOS</span>
+          <span class="pill">Linux：Android + Web</span>
+          <span class="pill"><a href="./index.html">返回目录</a></span>
+        </div>
+      </header>
+
+      <main>
+        <section>
+          <h2>macOS 基础安装</h2>
+          <pre><code class="language-bash">xcode-select --install
+
+brew install node watchman
+brew install --cask zulu@17
+brew install cocoapods</code></pre>
+
+          <p>检查版本：</p>
+          <pre><code class="language-bash">node -v
+npm -v
+java -version
+pod --version</code></pre>
+
+          <div class="callout">
+            <strong>iOS 必需：</strong>打开 App Store 安装 Xcode，然后打开一次 Xcode，接受许可并安装组件。
+          </div>
+        </section>
+
+        <section>
+          <h2>Linux 基础安装</h2>
+          <p>以 Ubuntu 为例。Linux 不能构建 iOS，只建议跑 Android 和 Web。</p>
+          <pre><code class="language-bash">sudo apt update
+sudo apt install -y curl git unzip openjdk-17-jdk
+
+curl -fsSL https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash
+source ~/.bashrc
+nvm install --lts
+nvm use --lts</code></pre>
+        </section>
+
+        <section>
+          <h2>Android SDK 环境变量</h2>
+          <p>安装 Android Studio 后，把下面内容加入 <code>~/.zshrc</code> 或 <code>~/.bashrc</code>。</p>
+          <pre><code class="language-bash"># macOS
+export ANDROID_HOME="$HOME/Library/Android/sdk"
+export PATH="$ANDROID_HOME/platform-tools:$ANDROID_HOME/emulator:$ANDROID_HOME/cmdline-tools/latest/bin:$PATH"
+
+# Linux 常见路径
+export ANDROID_HOME="$HOME/Android/Sdk"
+export PATH="$ANDROID_HOME/platform-tools:$ANDROID_HOME/emulator:$ANDROID_HOME/cmdline-tools/latest/bin:$PATH"</code></pre>
+
+          <p>重新打开终端后检查：</p>
+          <pre><code class="language-bash">adb version
+emulator -version</code></pre>
+        </section>
+
+        <section>
+          <h2>创建项目</h2>
+          <pre><code class="language-bash">npx @react-native-community/cli@latest init RNDemo
+cd RNDemo
+npx react-native doctor</code></pre>
+        </section>
+      </main>
+    </article>
+  </div>
+</body>
+</html>

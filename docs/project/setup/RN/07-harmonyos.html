@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>在 HarmonyOS 平台运行 RN 项目</title>
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+  <div class="page">
+    <article class="doc">
+      <header>
+        <p class="kicker">Step 7</p>
+        <h1>在 HarmonyOS 平台运行 React Native 项目</h1>
+        <div class="meta">
+          <span class="pill">目标：HarmonyOS / OpenHarmony</span>
+          <span class="pill">工具：DevEco Studio</span>
+          <span class="pill"><a href="./index.html">返回目录</a></span>
+        </div>
+      </header>
+
+      <main>
+        <section>
+          <h2>先理解成熟度</h2>
+          <p>
+            HarmonyOS 不是 React Native 官方核心平台，通常需要使用 OpenHarmony SIG 的 <code>ohos_react_native</code> 或相关 React Native OpenHarmony 适配。它更适合单独验证，不建议和 Android/iOS 在第一天强行合并交付。
+          </p>
+          <div class="callout warning">
+            <strong>新手建议：</strong>先跑通 Android，再单独开一个 HarmonyOS 分支或示例项目验证。
+          </div>
+        </section>
+
+        <section>
+          <h2>需要安装什么</h2>
+          <ul>
+            <li>Node.js 22.11+。</li>
+            <li>Git。</li>
+            <li>DevEco Studio。</li>
+            <li>HarmonyOS / OpenHarmony SDK。</li>
+            <li>OpenHarmony SIG 的 React Native 适配库。</li>
+          </ul>
+        </section>
+
+        <section>
+          <h2>推荐流程</h2>
+          <ol>
+            <li>安装 DevEco Studio。</li>
+            <li>在 DevEco Studio 中安装 HarmonyOS SDK。</li>
+            <li>准备模拟器或真机，并确认设备能被 DevEco Studio 识别。</li>
+            <li>阅读 <a href="https://gitee.com/openharmony-sig/ohos_react_native">ohos_react_native</a> 仓库 README。</li>
+            <li>按仓库提供的模板创建或改造 RN 工程。</li>
+            <li>用 DevEco Studio 打开 HarmonyOS 工程并运行。</li>
+          </ol>
+        </section>
+
+        <section>
+          <h2>示意命令</h2>
+          <p>不同版本的命令可能变化，以 OpenHarmony SIG 仓库为准。下面只作为流程感知：</p>
+          <pre><code class="language-bash">node -v
+npm -v
+git --version
+
+# 克隆官方适配仓库，查看 README 和示例
+git clone https://gitee.com/openharmony-sig/ohos_react_native.git</code></pre>
+        </section>
+
+        <section>
+          <h2>常见问题</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>问题</th>
+                <th>处理</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>命令和教程对不上</td>
+                <td>HarmonyOS 适配变化较快，以仓库 README 和分支说明为准。</td>
+              </tr>
+              <tr>
+                <td>设备运行失败</td>
+                <td>先确认 DevEco Studio 能独立运行一个空 HarmonyOS 项目。</td>
+              </tr>
+              <tr>
+                <td>三方 RN 库不可用</td>
+                <td>优先检查该库是否支持 HarmonyOS，原生模块通常要适配。</td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+      </main>
+    </article>
+  </div>
+</body>
+</html>

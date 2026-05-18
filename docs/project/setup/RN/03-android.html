@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>在 Android 平台运行 RN 项目</title>
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+  <div class="page">
+    <article class="doc">
+      <header>
+        <p class="kicker">Step 3</p>
+        <h1>在 Android 平台运行 React Native 项目</h1>
+        <div class="meta">
+          <span class="pill">适合：Windows / macOS / Linux</span>
+          <span class="pill">目标：Android 模拟器或真机</span>
+          <span class="pill"><a href="./index.html">返回目录</a></span>
+        </div>
+      </header>
+
+      <main>
+        <section>
+          <h2>准备模拟器</h2>
+          <ol>
+            <li>打开 Android Studio。</li>
+            <li>打开 Device Manager。</li>
+            <li>创建一个 Pixel 设备。</li>
+            <li>选择一个已安装的 Android System Image。</li>
+            <li>启动模拟器。</li>
+          </ol>
+          <pre><code class="language-powershell">adb devices</code></pre>
+          <p>能看到设备列表，说明模拟器或真机已连接。</p>
+        </section>
+
+        <section>
+          <h2>运行项目</h2>
+          <pre><code class="language-powershell">cd D:\Developer\Project\Personal\LearningAI\RNDemo
+npm start</code></pre>
+
+          <p>另开一个终端：</p>
+          <pre><code class="language-powershell">cd D:\Developer\Project\Personal\LearningAI\RNDemo
+npm run android</code></pre>
+        </section>
+
+        <section>
+          <h2>真机调试</h2>
+          <ol>
+            <li>手机打开开发者选项。</li>
+            <li>开启 USB 调试。</li>
+            <li>用 USB 连接电脑，允许调试授权。</li>
+            <li>运行 <code>adb devices</code> 确认设备状态是 <code>device</code>。</li>
+          </ol>
+          <pre><code class="language-powershell">adb devices
+npm run android</code></pre>
+        </section>
+
+        <section>
+          <h2>常见问题</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>问题</th>
+                <th>处理</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>找不到 SDK</td>
+                <td>检查 <code>ANDROID_HOME</code> 和 <code>platform-tools</code> 是否在 PATH。</td>
+              </tr>
+              <tr>
+                <td>Gradle 下载慢</td>
+                <td>保持网络稳定，第一次构建通常较慢。</td>
+              </tr>
+              <tr>
+                <td>模拟器黑屏或慢</td>
+                <td>开启硬件虚拟化，或用真机调试。</td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+      </main>
+    </article>
+  </div>
+</body>
+</html>
