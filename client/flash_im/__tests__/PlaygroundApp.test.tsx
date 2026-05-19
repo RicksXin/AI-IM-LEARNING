@@ -4,7 +4,7 @@
 
 import React from 'react';
 import ReactTestRenderer from 'react-test-renderer';
-import App from '../App';
+import PlaygroundApp from '../src/playground/PlaygroundApp';
 
 jest.mock('react-native-safe-area-context', () => {
   const ReactMock = require('react');
@@ -19,15 +19,19 @@ jest.mock('react-native-safe-area-context', () => {
   };
 });
 
-test('production app renders without playground-only fireworks entry points', async () => {
+test('playground app exposes the fireworks case', async () => {
   let renderer: ReactTestRenderer.ReactTestRenderer | undefined;
 
   await ReactTestRenderer.act(async () => {
-    renderer = ReactTestRenderer.create(<App />);
+    renderer = ReactTestRenderer.create(<PlaygroundApp />);
   });
 
-  expect(
-    renderer?.root.findAllByProps({ accessibilityLabel: '打开烟花秀' }),
-  ).toHaveLength(0);
-  expect(JSON.stringify(renderer?.toJSON())).not.toContain('烟花秀');
+  const fireworksButtons = renderer?.root.findAll(
+    node =>
+      node.props.accessibilityLabel === '打开烟花秀案例' &&
+      typeof node.props.onPress === 'function',
+  );
+
+  expect(fireworksButtons).toHaveLength(1);
+  expect(JSON.stringify(renderer?.toJSON())).toContain('烟花秀');
 });

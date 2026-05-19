@@ -1,0 +1,735 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>macOS 初学者 Go 环境安装指南</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f6f7f9;
+      --paper: #ffffff;
+      --ink: #172033;
+      --muted: #5f6878;
+      --line: #dce2ea;
+      --soft: #eef3f8;
+      --accent: #176b87;
+      --accent-2: #7d4f1d;
+      --good: #197642;
+      --warn: #a05a00;
+      --bad: #a33030;
+      --code-bg: #101827;
+      --code-ink: #e8eef8;
+      --shadow: 0 18px 48px rgba(23, 32, 51, 0.08);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif;
+      line-height: 1.72;
+    }
+
+    a {
+      color: var(--accent);
+      text-decoration: none;
+      border-bottom: 1px solid rgba(23, 107, 135, 0.28);
+    }
+
+    a:hover {
+      border-bottom-color: currentColor;
+    }
+
+    code,
+    pre {
+      font-family: "Cascadia Code", "JetBrains Mono", Consolas, monospace;
+    }
+
+    code {
+      padding: 0.12em 0.35em;
+      border-radius: 4px;
+      background: #edf2f7;
+      color: #26384d;
+      font-size: 0.92em;
+    }
+
+    pre {
+      margin: 16px 0 24px;
+      padding: 18px;
+      overflow-x: auto;
+      border-radius: 8px;
+      background: var(--code-bg);
+      color: var(--code-ink);
+      line-height: 1.58;
+      tab-size: 2;
+    }
+
+    pre code {
+      padding: 0;
+      background: transparent;
+      color: inherit;
+      font-size: 0.94em;
+    }
+
+    .page {
+      max-width: 1160px;
+      margin: 0 auto;
+      padding: 40px 24px 72px;
+    }
+
+    .doc {
+      background: var(--paper);
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow);
+    }
+
+    .doc-header {
+      padding: 52px 56px 36px;
+      border-bottom: 1px solid var(--line);
+      background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+    }
+
+    .doc-main {
+      padding: 0 56px 56px;
+    }
+
+    .kicker {
+      margin: 0 0 10px;
+      color: var(--accent-2);
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    h1,
+    h2,
+    h3 {
+      line-height: 1.25;
+      letter-spacing: 0;
+    }
+
+    h1 {
+      max-width: 940px;
+      margin: 0;
+      font-size: clamp(34px, 5vw, 58px);
+      font-weight: 800;
+    }
+
+    h2 {
+      margin: 46px 0 16px;
+      padding-top: 8px;
+      font-size: 28px;
+      border-top: 1px solid var(--line);
+    }
+
+    h3 {
+      margin: 28px 0 10px;
+      font-size: 20px;
+    }
+
+    p {
+      margin: 10px 0;
+    }
+
+    ul,
+    ol {
+      margin: 10px 0 16px;
+      padding-left: 1.25rem;
+    }
+
+    li {
+      margin: 6px 0;
+    }
+
+    table {
+      width: 100%;
+      margin: 18px 0 26px;
+      border-collapse: collapse;
+      table-layout: fixed;
+      font-size: 15px;
+    }
+
+    th,
+    td {
+      padding: 12px 13px;
+      border: 1px solid var(--line);
+      vertical-align: top;
+      word-break: break-word;
+    }
+
+    th {
+      background: #eef3f8;
+      text-align: left;
+      font-weight: 700;
+    }
+
+    tbody tr:nth-child(even) td {
+      background: #fafbfd;
+    }
+
+    .meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 26px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      min-height: 30px;
+      padding: 4px 10px;
+      border: 1px solid var(--line);
+      background: #ffffff;
+      border-radius: 999px;
+      white-space: nowrap;
+    }
+
+    .callout {
+      margin: 22px 0;
+      padding: 18px 20px;
+      border-left: 5px solid var(--accent);
+      background: #f2f8fb;
+    }
+
+    .callout.warning {
+      border-left-color: var(--warn);
+      background: #fff7e8;
+    }
+
+    .callout.danger {
+      border-left-color: var(--bad);
+      background: #fae9e9;
+    }
+
+    .tag {
+      display: inline-block;
+      margin: 2px 4px 2px 0;
+      padding: 2px 7px;
+      border-radius: 999px;
+      background: #e7f1f5;
+      color: #164e63;
+      font-size: 12px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .tag.good {
+      background: #e8f6ee;
+      color: var(--good);
+    }
+
+    .tag.warn {
+      background: #fff2d8;
+      color: var(--warn);
+    }
+
+    .diagram {
+      margin: 18px 0 28px;
+      padding: 18px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #ffffff;
+      overflow-x: auto;
+    }
+
+    .mermaid {
+      min-width: 720px;
+      margin: 0;
+      text-align: center;
+    }
+
+    .small {
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .sources {
+      columns: 2;
+      column-gap: 34px;
+      padding-left: 1.2rem;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .sources li {
+      break-inside: avoid;
+      margin: 0 0 10px;
+    }
+
+    @media (max-width: 860px) {
+      .page {
+        padding: 0;
+      }
+
+      .doc {
+        border-left: 0;
+        border-right: 0;
+      }
+
+      .doc-header,
+      .doc-main {
+        padding-left: 20px;
+        padding-right: 20px;
+      }
+
+      .doc-header {
+        padding-top: 34px;
+      }
+
+      table {
+        display: block;
+        overflow-x: auto;
+        table-layout: auto;
+      }
+
+      th,
+      td {
+        min-width: 190px;
+      }
+
+      .sources {
+        columns: 1;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="doc">
+      <div class="doc-header">
+        <p class="kicker">Setup Guide</p>
+        <h1>macOS 初学者 Go 环境安装指南</h1>
+        <div class="meta">
+          <span class="pill">生成日期：2026-05-18</span>
+          <span class="pill">当前系统：macOS 26.2</span>
+          <span class="pill">CPU 架构：x86_64</span>
+          <span class="pill">Shell：zsh</span>
+          <span class="pill">推荐安装器：Homebrew</span>
+        </div>
+      </div>
+
+      <div class="doc-main">
+        <div class="section">
+          <h2>当前环境结论</h2>
+          <p>
+            本文档按当前机器环境编写：macOS 26.2，Intel 架构 <code>x86_64</code>，默认 Shell 是 <code>zsh</code>；已检测到 Homebrew <code>5.1.11</code>，安装路径为 <code>/usr/local</code>，未检测到 <code>go</code> 命令。因此，推荐使用 Homebrew 自动安装 Go。
+          </p>
+
+          <table>
+            <thead>
+              <tr>
+                <th>项目</th>
+                <th>检测结果</th>
+                <th>说明</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>操作系统</td>
+                <td><span class="tag good">macOS 26.2</span></td>
+                <td>适合安装官方 macOS pkg 或 Homebrew 版本 Go。</td>
+              </tr>
+              <tr>
+                <td>CPU 架构</td>
+                <td><span class="tag good">x86_64</span></td>
+                <td>当前机器是 Intel Mac；官方 pkg 应选择 macOS x86-64 版本。Apple Silicon Mac 应选择 ARM64 版本。</td>
+              </tr>
+              <tr>
+                <td>Homebrew</td>
+                <td><span class="tag good">已安装：5.1.11</span></td>
+                <td>当前前缀是 <code>/usr/local</code>。Apple Silicon 常见前缀是 <code>/opt/homebrew</code>。</td>
+              </tr>
+              <tr>
+                <td>Go</td>
+                <td><span class="tag warn">未检测到</span></td>
+                <td>安装完成后需要重新打开终端，或运行 <code>exec zsh -l</code> 刷新环境。</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div class="callout">
+            <strong>初学者建议：</strong>优先使用“方式一：Homebrew 自动安装”。它适合日后升级和卸载，也更容易配合开发环境管理。
+          </div>
+        </div>
+
+        <div class="section">
+          <h2>安装流程</h2>
+          <div class="diagram">
+            <pre class="mermaid">
+flowchart TD
+  A["打开 Terminal"] --> B["确认 Homebrew 可用"]
+  B --> C["brew install go"]
+  C --> D["重新打开终端或刷新 zsh"]
+  D --> E["go version 验证"]
+  E --> F["安装 VS Code Go 插件"]
+  F --> G["创建 Hello World 项目"]
+  G --> H["运行 go run / go test"]
+            </pre>
+          </div>
+        </div>
+
+        <div class="section">
+          <h2>方式一：Homebrew 自动安装</h2>
+          <p>
+            这是当前机器的推荐方式。脚本会检查 Homebrew，如果不存在则提示安装；随后安装 Go、Git 和常用 VS Code 插件，并输出 Go 版本和关键环境变量。
+          </p>
+
+          <div class="callout warning">
+            <strong>执行前注意：</strong>如果你已经通过官方 pkg 安装过 Go，建议先运行 <code>go version</code> 和 <code>which go</code> 看看来源。初学阶段最好只保留一种安装方式，避免 PATH 混乱。
+          </div>
+
+          <pre><code class="language-bash">cat &gt; /tmp/setup-go-macos.sh &lt;&lt;'SH'
+#!/usr/bin/env bash
+set -euo pipefail
+
+echo "==&gt; macOS Go installer"
+echo "OS: $(sw_vers -productName) $(sw_vers -productVersion) ($(sw_vers -buildVersion))"
+echo "CPU: $(uname -m)"
+
+if ! command -v brew &gt;/dev/null 2&gt;&amp;1; then
+  echo "Homebrew 未安装。请先按官网安装 Homebrew: https://brew.sh/"
+  exit 1
+fi
+
+if [[ -x /opt/homebrew/bin/brew ]]; then
+  eval "$(/opt/homebrew/bin/brew shellenv)"
+elif [[ -x /usr/local/bin/brew ]]; then
+  eval "$(/usr/local/bin/brew shellenv)"
+fi
+
+echo "==&gt; Updating Homebrew..."
+brew update
+
+echo "==&gt; Installing Go and Git..."
+brew install go git
+
+echo "==&gt; Ensuring GOPATH bin is in ~/.zshrc..."
+touch "$HOME/.zshrc"
+if ! grep -q 'export PATH="$PATH:$HOME/go/bin"' "$HOME/.zshrc"; then
+  printf '\n# Go user installed tools\nexport PATH="$PATH:$HOME/go/bin"\n' &gt;&gt; "$HOME/.zshrc"
+fi
+export PATH="$PATH:$HOME/go/bin"
+
+if command -v code &gt;/dev/null 2&gt;&amp;1; then
+  echo "==&gt; Installing VS Code Go extension..."
+  code --install-extension golang.go --force || true
+fi
+
+echo "==&gt; Installed versions:"
+go version
+go env GOPATH GOROOT GOOS GOARCH GOPROXY
+SH
+
+bash /tmp/setup-go-macos.sh</code></pre>
+
+          <p>
+            如果最后输出类似 <code>go version go1.26.3 darwin/amd64</code>，说明安装成功。版本号会随着 Go 官方发布和 Homebrew 源更新而变化。
+          </p>
+        </div>
+
+        <div class="section">
+          <h2>方式二：官方 pkg 安装</h2>
+          <p>
+            Go 官方 macOS 安装包会把 Go 安装到 <code>/usr/local/go</code>，并把 <code>/usr/local/go/bin</code> 写入 <code>PATH</code>。如果你不想使用 Homebrew，可以使用官方 pkg。
+          </p>
+
+          <table>
+            <thead>
+              <tr>
+                <th>Mac 类型</th>
+                <th>应该下载的包</th>
+                <th>如何判断</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Intel Mac</td>
+                <td>macOS x86-64 pkg</td>
+                <td><code>uname -m</code> 输出 <code>x86_64</code>。</td>
+              </tr>
+              <tr>
+                <td>Apple Silicon Mac</td>
+                <td>macOS ARM64 pkg</td>
+                <td><code>uname -m</code> 输出 <code>arm64</code>。</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <ol>
+            <li>打开 <a href="https://go.dev/dl/">Go 官方下载页</a>。</li>
+            <li>根据上表选择 macOS 安装包。</li>
+            <li>双击 <code>.pkg</code> 文件，按安装器提示继续。</li>
+            <li>安装完成后关闭 Terminal，重新打开。</li>
+            <li>运行 <code>go version</code> 验证。</li>
+          </ol>
+
+          <pre><code class="language-bash">go version
+which go
+go env GOPATH GOROOT GOOS GOARCH</code></pre>
+
+          <div class="callout warning">
+            <strong>不要混装：</strong>如果你已经用 Homebrew 安装了 Go，不建议再安装官方 pkg。两者都能工作，但新手容易被 <code>which go</code> 和 <code>PATH</code> 顺序搞混。
+          </div>
+        </div>
+
+        <div class="section">
+          <h2>安装 VS Code Go 插件</h2>
+          <p>
+            VS Code 安装官方 Go 插件后，会提供语法提示、跳转、格式化、调试和测试入口。第一次打开 Go 项目时，它可能提示安装 <code>gopls</code>、<code>dlv</code> 等工具，按提示安装即可。
+          </p>
+
+          <pre><code class="language-bash">if command -v code &gt;/dev/null 2&gt;&amp;1; then
+  code --install-extension golang.go --force
+else
+  echo "未找到 code 命令。可以打开 VS Code，在扩展市场搜索 Go 并安装官方 Go 插件。"
+fi</code></pre>
+
+          <p>
+            如果安装 Go 插件后仍然没有补全，可以手动安装语言服务：
+          </p>
+
+          <pre><code class="language-bash">go install golang.org/x/tools/gopls@latest</code></pre>
+        </div>
+
+        <div class="section">
+          <h2>可选：配置 Go 模块代理</h2>
+          <p>
+            Go 下载第三方依赖时会访问模块代理。如果下载很慢，可以配置代理。公司或团队有统一代理时，应优先使用团队配置。
+          </p>
+
+          <pre><code class="language-bash"># 中国大陆网络常用配置
+go env -w GOPROXY=https://goproxy.cn,direct
+
+# 恢复 Go 官方默认代理
+go env -w GOPROXY=https://proxy.golang.org,direct
+
+# 查看当前配置
+go env GOPROXY GOPATH GOROOT GOBIN</code></pre>
+        </div>
+
+        <div class="section">
+          <h2>创建第一个 Go 项目</h2>
+          <p>
+            Go 现在以模块为基本单位。初学时可以把练习项目放到用户目录下，例如 <code>$HOME/go-practice/hello-go</code>。
+          </p>
+
+          <pre><code class="language-bash">mkdir -p "$HOME/go-practice/hello-go"
+cd "$HOME/go-practice/hello-go"
+
+go mod init example.com/hello-go
+
+cat &gt; main.go &lt;&lt;'GO'
+package main
+
+import "fmt"
+
+func main() {
+	fmt.Println("Hello, Go on macOS!")
+}
+GO
+
+gofmt -w main.go
+go run .</code></pre>
+
+          <p>
+            看到 <code>Hello, Go on macOS!</code> 就说明开发环境已经能正常编译和运行 Go 程序。
+          </p>
+        </div>
+
+        <div class="section">
+          <h2>再加一个测试</h2>
+          <p>
+            Go 自带测试工具，初学者应该尽早习惯 <code>go test</code>。
+          </p>
+
+          <pre><code class="language-bash">cat &gt; add.go &lt;&lt;'GO'
+package main
+
+func Add(a int, b int) int {
+	return a + b
+}
+GO
+
+cat &gt; add_test.go &lt;&lt;'GO'
+package main
+
+import "testing"
+
+func TestAdd(t *testing.T) {
+	got := Add(2, 3)
+	want := 5
+	if got != want {
+		t.Fatalf("Add(2, 3) = %d, want %d", got, want)
+	}
+}
+GO
+
+gofmt -w add.go add_test.go
+go test ./...</code></pre>
+
+          <p>
+            如果输出 <code>ok</code>，说明测试通过。
+          </p>
+        </div>
+
+        <div class="section">
+          <h2>日常常用命令</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>命令</th>
+                <th>用途</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>go version</code></td>
+                <td>查看 Go 是否安装成功，以及当前版本。</td>
+              </tr>
+              <tr>
+                <td><code>which go</code></td>
+                <td>查看当前终端实际使用哪个 Go 命令，排查 Homebrew/pkg 混装很有用。</td>
+              </tr>
+              <tr>
+                <td><code>go env</code></td>
+                <td>查看 Go 环境变量，例如 <code>GOPATH</code>、<code>GOROOT</code>、<code>GOPROXY</code>。</td>
+              </tr>
+              <tr>
+                <td><code>go mod init example.com/app</code></td>
+                <td>初始化一个 Go 模块。</td>
+              </tr>
+              <tr>
+                <td><code>go run .</code></td>
+                <td>编译并运行当前目录的程序。</td>
+              </tr>
+              <tr>
+                <td><code>go test ./...</code></td>
+                <td>运行当前模块下所有测试。</td>
+              </tr>
+              <tr>
+                <td><code>go fmt ./...</code></td>
+                <td>格式化当前模块下的 Go 代码。</td>
+              </tr>
+              <tr>
+                <td><code>go mod tidy</code></td>
+                <td>整理依赖，添加缺失依赖并删除不再使用的依赖。</td>
+              </tr>
+              <tr>
+                <td><code>go install package@latest</code></td>
+                <td>安装 Go 编写的命令行工具到 <code>$HOME/go/bin</code>。</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="section">
+          <h2>常见问题</h2>
+          <h3>Terminal 提示 command not found: go</h3>
+          <p>
+            如果刚安装完 Go，先关闭 Terminal 再重新打开。仍然失败时运行：
+          </p>
+
+          <pre><code class="language-bash">echo "$PATH"
+which go
+
+# Homebrew 安装时，Intel Mac 常见路径
+eval "$(/usr/local/bin/brew shellenv)"
+
+# Apple Silicon Mac 常见路径
+eval "$(/opt/homebrew/bin/brew shellenv)"</code></pre>
+
+          <h3>Homebrew 安装后版本不是最新</h3>
+          <p>
+            先更新 Homebrew 索引，再升级 Go：
+          </p>
+
+          <pre><code class="language-bash">brew update
+brew upgrade go
+go version</code></pre>
+
+          <h3>VS Code 能打开文件，但没有补全和跳转</h3>
+          <p>
+            确认已安装官方 Go 插件，并允许它安装 <code>gopls</code>。也可以在终端运行：
+          </p>
+
+          <pre><code class="language-bash">go install golang.org/x/tools/gopls@latest</code></pre>
+
+          <h3>GOROOT 和 GOPATH 要手动设置吗</h3>
+          <p>
+            初学者通常不需要手动设置。<code>GOROOT</code> 是 Go 安装目录；<code>GOPATH</code> 默认是 <code>$HOME/go</code>。现在 Go 项目主要依赖 <code>go.mod</code> 管理，不需要把项目放进 <code>GOPATH</code>。
+          </p>
+        </div>
+
+        <div class="section">
+          <h2>卸载或升级</h2>
+          <p>
+            如果使用 Homebrew 安装：
+          </p>
+
+          <pre><code class="language-bash"># 升级 Go
+brew update
+brew upgrade go
+
+# 卸载 Go
+brew uninstall go</code></pre>
+
+          <p>
+            如果使用官方 pkg 安装：
+          </p>
+
+          <pre><code class="language-bash"># 删除官方 pkg 安装目录。执行前请确认你没有用 Homebrew 管理 Go。
+sudo rm -rf /usr/local/go</code></pre>
+
+          <div class="callout danger">
+            <strong>谨慎删除：</strong><code>$HOME/go</code> 里可能有你安装的工具、模块缓存和练习项目。卸载 Go 通常不需要删除这个目录，除非你明确知道里面没有要保留的内容。
+          </div>
+        </div>
+
+        <div class="section">
+          <h2>参考资料</h2>
+          <ol class="sources">
+            <li><a href="https://go.dev/doc/install">Go 官方安装文档</a></li>
+            <li><a href="https://go.dev/dl/">Go 官方下载页</a></li>
+            <li><a href="https://go.dev/doc/tutorial/getting-started">Go 官方入门教程</a></li>
+            <li><a href="https://go.dev/ref/mod">Go Modules Reference</a></li>
+            <li><a href="https://formulae.brew.sh/formula/go">Homebrew Go Formula</a></li>
+            <li><a href="https://brew.sh/">Homebrew 官网</a></li>
+            <li><a href="https://marketplace.visualstudio.com/items?itemName=golang.Go">VS Code Go 扩展</a></li>
+          </ol>
+          <p class="small">
+            本次核对时，Go 官方下载页和 Homebrew Formula 显示的稳定版为 <code>go1.26.3</code>；实际安装版本以官方源和 Homebrew 源为准。
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: "base",
+      securityLevel: "strict",
+      themeVariables: {
+        fontFamily: "-apple-system, BlinkMacSystemFont, Segoe UI, Microsoft YaHei, sans-serif",
+        primaryColor: "#eef3f8",
+        primaryTextColor: "#172033",
+        primaryBorderColor: "#176b87",
+        lineColor: "#6b7280",
+        secondaryColor: "#f7fbfc",
+        tertiaryColor: "#ffffff"
+      }
+    });
+  </script>
+</body>
+</html>

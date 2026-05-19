@@ -1,37 +1,16 @@
 import React from 'react';
-import {
-  Pressable,
-  SafeAreaView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
-type HomeScreenProps = {
-  onOpenFireworks: () => void;
-};
-
-function HomeScreen({ onOpenFireworks }: HomeScreenProps) {
+function HomeScreen() {
   return (
     <SafeAreaView style={styles.screen}>
       <View style={styles.content}>
         <Text style={styles.kicker}>Flash IM</Text>
         <Text style={styles.title}>环境已就绪</Text>
         <Text style={styles.subtitle}>
-          第一个全端应用已经跑起来。现在按下按钮，把这一刻炸成彩色。
+          第一个全端应用已经跑起来。生产入口保持干净，适合继续接入真实业务。
         </Text>
-
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="打开烟花秀"
-          onPress={onOpenFireworks}
-          style={({ pressed }) => [
-            styles.fireworksButton,
-            pressed && styles.fireworksButtonPressed,
-          ]}
-        >
-          <Text style={styles.buttonText}>烟花秀</Text>
-        </Pressable>
       </View>
     </SafeAreaView>
   );
@@ -67,29 +46,6 @@ const styles = StyleSheet.create({
     lineHeight: 26,
     marginTop: 14,
     maxWidth: 340,
-  },
-  fireworksButton: {
-    alignItems: 'center',
-    alignSelf: 'flex-start',
-    backgroundColor: '#ff4fd8',
-    borderRadius: 8,
-    marginTop: 34,
-    paddingHorizontal: 26,
-    paddingVertical: 15,
-    shadowColor: '#ff4fd8',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.35,
-    shadowRadius: 18,
-  },
-  fireworksButtonPressed: {
-    opacity: 0.82,
-    transform: [{ scale: 0.98 }],
-  },
-  buttonText: {
-    color: '#ffffff',
-    fontSize: 18,
-    fontWeight: '800',
-    letterSpacing: 0,
   },
 });
 

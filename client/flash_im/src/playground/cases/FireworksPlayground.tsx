@@ -8,11 +8,11 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import FireworksLayer from '../features/fireworks/FireworksLayer';
-import { createFireworkBurst } from '../features/fireworks/createFireworkBurst';
-import type { FireworkBurst } from '../features/fireworks/types';
+import FireworksLayer from '../../features/fireworks/FireworksLayer';
+import { createFireworkBurst } from '../../features/fireworks/createFireworkBurst';
+import type { FireworkBurst } from '../../features/fireworks/types';
 
-type FireworksShowScreenProps = {
+type FireworksPlaygroundProps = {
   onBack: () => void;
 };
 
@@ -26,7 +26,7 @@ type Star = {
 
 const MAX_BURSTS = 9;
 
-function FireworksShowScreen({ onBack }: FireworksShowScreenProps) {
+function FireworksPlayground({ onBack }: FireworksPlaygroundProps) {
   const [bursts, setBursts] = useState<FireworkBurst[]>([]);
   const idRef = useRef(0);
   const { width, height } = useWindowDimensions();
@@ -112,7 +112,7 @@ function FireworksShowScreen({ onBack }: FireworksShowScreenProps) {
       >
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="返回首页"
+          accessibilityLabel="返回开发游乐场"
           onPress={onBack}
           style={({ pressed }) => [
             styles.backButton,
@@ -196,4 +196,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default FireworksShowScreen;
+export default FireworksPlayground;

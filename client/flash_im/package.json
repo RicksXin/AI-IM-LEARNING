@@ -4,9 +4,13 @@
   "private": true,
   "scripts": {
     "android": "react-native run-android",
+    "android:playground": "cd android && ./gradlew installDebug -PjsMainModuleName=index.playground && adb shell am start -n com.toly1994.flash_im/.MainActivity",
+    "bundle:android:release": "react-native bundle --platform android --dev false --entry-file index.js --bundle-output /tmp/flash-im-release.android.bundle --assets-dest /tmp/flash-im-release-assets",
+    "bundle:playground:android": "react-native bundle --platform android --dev true --entry-file index.playground.js --bundle-output /tmp/flash-im-playground.android.bundle --assets-dest /tmp/flash-im-playground-assets",
     "ios": "react-native run-ios",
     "lint": "eslint .",
     "start": "react-native start",
+    "start:playground": "react-native start --reset-cache",
     "test": "jest"
   },
   "dependencies": {
