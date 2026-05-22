@@ -1,0 +1,1289 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>HTTP 与 WebSocket 对比：为什么 IM 产品必须使用实时长连接</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f6f7f9;
+      --paper: #ffffff;
+      --ink: #172033;
+      --muted: #5f6878;
+      --line: #dce2ea;
+      --soft: #eef3f8;
+      --accent: #176b87;
+      --accent-2: #7d4f1d;
+      --good: #197642;
+      --warn: #a05a00;
+      --bad: #a33030;
+      --code-bg: #101827;
+      --code-ink: #e8eef8;
+      --shadow: 0 18px 48px rgba(23, 32, 51, 0.08);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif;
+      line-height: 1.72;
+    }
+
+    a {
+      color: var(--accent);
+      text-decoration: none;
+      border-bottom: 1px solid rgba(23, 107, 135, 0.28);
+    }
+
+    a:hover {
+      border-bottom-color: currentColor;
+    }
+
+    code,
+    pre {
+      font-family: "Cascadia Code", "JetBrains Mono", Consolas, monospace;
+    }
+
+    code {
+      padding: 0.12em 0.35em;
+      border-radius: 4px;
+      background: #edf2f7;
+      color: #26384d;
+      font-size: 0.92em;
+    }
+
+    pre {
+      margin: 16px 0 24px;
+      padding: 18px;
+      overflow-x: auto;
+      border-radius: 8px;
+      background: var(--code-bg);
+      color: var(--code-ink);
+      line-height: 1.58;
+    }
+
+    pre code {
+      padding: 0;
+      background: transparent;
+      color: inherit;
+      font-size: 0.94em;
+    }
+
+    .page {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 40px 24px 72px;
+    }
+
+    .report {
+      overflow: hidden;
+      background: var(--paper);
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow);
+    }
+
+    header {
+      padding: 52px 56px 36px;
+      border-bottom: 1px solid var(--line);
+      background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+    }
+
+    main {
+      padding: 0 56px 56px;
+    }
+
+    .kicker {
+      margin: 0 0 10px;
+      color: var(--accent-2);
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    h1,
+    h2,
+    h3 {
+      line-height: 1.25;
+      letter-spacing: 0;
+    }
+
+    h1 {
+      max-width: 980px;
+      margin: 0;
+      font-size: clamp(34px, 5vw, 58px);
+      font-weight: 800;
+    }
+
+    h2 {
+      margin: 46px 0 16px;
+      padding-top: 8px;
+      font-size: 28px;
+      border-top: 1px solid var(--line);
+    }
+
+    h3 {
+      margin: 28px 0 10px;
+      font-size: 20px;
+    }
+
+    p {
+      margin: 10px 0;
+    }
+
+    ul,
+    ol {
+      margin: 10px 0 16px;
+      padding-left: 1.25rem;
+    }
+
+    li {
+      margin: 6px 0;
+    }
+
+    table {
+      width: 100%;
+      margin: 18px 0 26px;
+      border-collapse: collapse;
+      table-layout: fixed;
+      font-size: 15px;
+    }
+
+    th,
+    td {
+      padding: 12px 13px;
+      border: 1px solid var(--line);
+      vertical-align: top;
+      word-break: break-word;
+    }
+
+    th {
+      background: #eef3f8;
+      text-align: left;
+      font-weight: 700;
+    }
+
+    tbody tr:nth-child(even) td {
+      background: #fafbfd;
+    }
+
+    .meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 26px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      min-height: 30px;
+      padding: 4px 10px;
+      border: 1px solid var(--line);
+      background: #ffffff;
+      border-radius: 999px;
+      white-space: nowrap;
+    }
+
+    .lead {
+      max-width: 900px;
+      margin-top: 22px;
+      color: var(--muted);
+      font-size: 18px;
+    }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 14px;
+      margin: 28px 0 10px;
+    }
+
+    .metric {
+      min-height: 128px;
+      padding: 18px;
+      border: 1px solid var(--line);
+      background: var(--soft);
+      border-radius: 8px;
+    }
+
+    .metric strong {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 28px;
+      line-height: 1.1;
+    }
+
+    .metric span {
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .comic-note {
+      margin: 20px 0 24px;
+      color: var(--muted);
+      font-size: 16px;
+    }
+
+    .cast-grid {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 12px;
+      margin: 18px 0 28px;
+    }
+
+    .cast-card {
+      min-height: 178px;
+      padding: 16px 12px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: #fbfdff;
+      text-align: center;
+    }
+
+    .mascot {
+      position: relative;
+      width: 72px;
+      height: 72px;
+      margin: 0 auto 12px;
+      border: 3px solid rgba(23, 32, 51, 0.12);
+      border-radius: 24px;
+      background: #e9f2ff;
+      box-shadow: inset 0 -8px 0 rgba(23, 32, 51, 0.06);
+    }
+
+    .mascot::before,
+    .mascot::after {
+      content: "";
+      position: absolute;
+      top: -10px;
+      width: 18px;
+      height: 24px;
+      border: 3px solid rgba(23, 32, 51, 0.12);
+      border-bottom-width: 0;
+      border-radius: 18px 18px 4px 4px;
+      background: inherit;
+    }
+
+    .mascot::before {
+      left: 10px;
+      transform: rotate(-12deg);
+    }
+
+    .mascot::after {
+      right: 10px;
+      transform: rotate(12deg);
+    }
+
+    .mascot .eyes {
+      position: absolute;
+      top: 27px;
+      left: 18px;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #172033;
+      box-shadow: 25px 0 0 #172033;
+    }
+
+    .mascot .mouth {
+      position: absolute;
+      top: 45px;
+      left: 29px;
+      width: 14px;
+      height: 7px;
+      border-bottom: 3px solid #172033;
+      border-radius: 0 0 14px 14px;
+    }
+
+    .mascot .badge-letter {
+      position: absolute;
+      right: -8px;
+      bottom: -8px;
+      display: grid;
+      width: 30px;
+      height: 30px;
+      place-items: center;
+      border: 2px solid #ffffff;
+      border-radius: 999px;
+      background: var(--accent);
+      color: #ffffff;
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .mascot-http {
+      background: #f9e1b8;
+    }
+
+    .mascot-ws {
+      background: #cdeee1;
+    }
+
+    .mascot-im {
+      background: #dbeafe;
+    }
+
+    .mascot-user-a {
+      background: #f7d7e6;
+    }
+
+    .mascot-user-b {
+      background: #dde3ff;
+    }
+
+    .cast-name {
+      display: block;
+      color: var(--ink);
+      font-size: 16px;
+      font-weight: 800;
+    }
+
+    .cast-role {
+      display: block;
+      margin-top: 5px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .storyboard-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+      margin: 18px 0 30px;
+    }
+
+    .story-card {
+      display: grid;
+      grid-template-rows: auto 1fr;
+      min-height: 300px;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: #ffffff;
+    }
+
+    .story-scene {
+      min-height: 126px;
+      padding: 18px;
+      background:
+        radial-gradient(circle at 20% 20%, rgba(23, 107, 135, 0.14), transparent 26%),
+        linear-gradient(180deg, #f8fbff 0%, #eef5fb 100%);
+    }
+
+    .story-scene-inner {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      min-height: 90px;
+    }
+
+    .mini {
+      position: relative;
+      display: grid;
+      width: 50px;
+      height: 50px;
+      place-items: center;
+      border: 2px solid rgba(23, 32, 51, 0.12);
+      border-radius: 18px;
+      background: #e9f2ff;
+      color: #172033;
+      font-size: 14px;
+      font-weight: 900;
+      box-shadow: inset 0 -6px 0 rgba(23, 32, 51, 0.06);
+    }
+
+    .mini-http {
+      background: #f9e1b8;
+    }
+
+    .mini-ws {
+      background: #cdeee1;
+    }
+
+    .mini-im {
+      background: #dbeafe;
+    }
+
+    .mini-a {
+      background: #f7d7e6;
+    }
+
+    .mini-b {
+      background: #dde3ff;
+    }
+
+    .motion-line {
+      width: 56px;
+      height: 8px;
+      border-top: 3px dashed rgba(23, 107, 135, 0.65);
+    }
+
+    .motion-line.slow {
+      border-top-color: rgba(160, 90, 0, 0.58);
+    }
+
+    .motion-line.live {
+      border-top-style: solid;
+      border-top-color: rgba(25, 118, 66, 0.75);
+    }
+
+    .bubble {
+      max-width: 140px;
+      padding: 8px 10px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: #ffffff;
+      color: #26384d;
+      font-size: 13px;
+      font-weight: 700;
+      line-height: 1.35;
+    }
+
+    .story-copy {
+      padding: 16px 18px 18px;
+    }
+
+    .story-step {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 58px;
+      min-height: 26px;
+      margin-bottom: 8px;
+      border-radius: 999px;
+      background: var(--accent);
+      color: #ffffff;
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .story-copy h3 {
+      margin: 0 0 8px;
+      font-size: 19px;
+    }
+
+    .dialogue {
+      margin: 8px 0;
+      padding-left: 0;
+      list-style: none;
+    }
+
+    .dialogue li {
+      margin: 5px 0;
+      color: #26384d;
+      font-size: 14px;
+    }
+
+    .knowledge {
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .callout {
+      margin: 18px 0 24px;
+      padding: 16px 18px;
+      border-left: 4px solid var(--accent);
+      border-radius: 8px;
+      background: #edf7fa;
+    }
+
+    .callout strong {
+      color: var(--accent);
+    }
+
+    .warning {
+      border-left-color: var(--warn);
+      background: #fff7e8;
+    }
+
+    .warning strong {
+      color: var(--warn);
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 18px;
+      margin: 18px 0 28px;
+    }
+
+    .card {
+      padding: 18px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fbfdff;
+    }
+
+    .card h3 {
+      margin-top: 0;
+    }
+
+    .diagram {
+      margin: 18px 0 28px;
+      padding: 18px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fbfdff;
+      overflow-x: auto;
+    }
+
+    .diagram-title {
+      margin: 0 0 10px;
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .tag {
+      display: inline-block;
+      margin: 0 6px 6px 0;
+      padding: 3px 8px;
+      border-radius: 999px;
+      background: #edf2f7;
+      color: #415066;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .good {
+      color: var(--good);
+      font-weight: 700;
+    }
+
+    .warn {
+      color: var(--warn);
+      font-weight: 700;
+    }
+
+    .bad {
+      color: var(--bad);
+      font-weight: 700;
+    }
+
+    footer {
+      padding: 26px 56px 34px;
+      border-top: 1px solid var(--line);
+      background: #f8fafc;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    @media (max-width: 880px) {
+      .summary-grid,
+      .grid-2,
+      .cast-grid,
+      .storyboard-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 720px) {
+      .page {
+        padding: 0;
+      }
+
+      .report {
+        border-width: 0;
+      }
+
+      header,
+      main,
+      footer {
+        padding-left: 22px;
+        padding-right: 22px;
+      }
+
+      header {
+        padding-top: 36px;
+      }
+
+      table {
+        font-size: 14px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <article class="report">
+      <header>
+        <p class="kicker">IM Architecture Research</p>
+        <h1>HTTP 与 WebSocket 对比：为什么 IM 产品必须使用实时长连接</h1>
+        <p class="lead">
+          HTTP 很适合做接口请求，但它天然是“客户端问，服务端答”。IM 的核心是“别人给你发消息时，服务端要立刻主动告诉你”。这个能力不能只靠普通 HTTP 请求优雅解决，在线实时通信必须引入 WebSocket 这样的长连接通道。
+        </p>
+        <div class="meta">
+          <span class="pill">场景：即时通信产品</span>
+          <span class="pill">已有能力：HTTP 接口请求</span>
+          <span class="pill">新增能力：实时消息收发</span>
+          <span class="pill">结论：HTTP + WebSocket 组合使用</span>
+        </div>
+      </header>
+
+      <main>
+        <section>
+          <h2>一、一句话结论</h2>
+          <div class="callout">
+            <strong>IM 产品不是完全抛弃 HTTP，而是必须把 HTTP 和 WebSocket 分工使用：</strong>
+            HTTP 负责登录、拉取会话列表、历史消息、上传文件、配置查询；WebSocket 负责在线消息实时收发、服务端推送、已读回执、输入状态、在线状态和心跳保活。
+          </div>
+          <div class="summary-grid">
+            <div class="metric">
+              <strong>HTTP</strong>
+              <span>像打客服电话：你打过去问一次，对方回答一次。你不问，对方通常不会主动开口。</span>
+            </div>
+            <div class="metric">
+              <strong>轮询</strong>
+              <span>像每隔几秒问一次“有我的消息吗”。能用，但延迟、耗电、浪费请求。</span>
+            </div>
+            <div class="metric">
+              <strong>WebSocket</strong>
+              <span>像电话一直通着：双方都能随时说话，服务端可以立即把新消息推给客户端。</span>
+            </div>
+            <div class="metric">
+              <strong>IM</strong>
+              <span>用户期待消息“马上到”。只靠 HTTP 会让体验和成本都很难控制。</span>
+            </div>
+          </div>
+        </section>
+
+        <section>
+          <h2>二、可爱漫画分镜：消息咖啡馆的一天</h2>
+          <p class="comic-note">
+            这一节把技术概念翻译成角色对话：小 H 代表 HTTP，小 W 代表 WebSocket。故事发生在“消息咖啡馆”，店长正在为 IM 产品挑选通信方式。
+          </p>
+
+          <h3>角色设定</h3>
+          <div class="cast-grid">
+            <div class="cast-card">
+              <div class="mascot mascot-http">
+                <span class="eyes"></span>
+                <span class="mouth"></span>
+                <span class="badge-letter">H</span>
+              </div>
+              <strong class="cast-name">小 H</strong>
+              <span class="cast-role">HTTP 邮差。认真可靠，擅长“一问一答”。</span>
+            </div>
+            <div class="cast-card">
+              <div class="mascot mascot-ws">
+                <span class="eyes"></span>
+                <span class="mouth"></span>
+                <span class="badge-letter">W</span>
+              </div>
+              <strong class="cast-name">小 W</strong>
+              <span class="cast-role">WebSocket 接线员。一直在线，能随时双向传话。</span>
+            </div>
+            <div class="cast-card">
+              <div class="mascot mascot-im">
+                <span class="eyes"></span>
+                <span class="mouth"></span>
+                <span class="badge-letter">IM</span>
+              </div>
+              <strong class="cast-name">小熊店长</strong>
+              <span class="cast-role">即时通信产品负责人，关心消息能不能马上到。</span>
+            </div>
+            <div class="cast-card">
+              <div class="mascot mascot-user-a">
+                <span class="eyes"></span>
+                <span class="mouth"></span>
+                <span class="badge-letter">A</span>
+              </div>
+              <strong class="cast-name">小猫 A</strong>
+              <span class="cast-role">发消息的人，希望对方立刻收到。</span>
+            </div>
+            <div class="cast-card">
+              <div class="mascot mascot-user-b">
+                <span class="eyes"></span>
+                <span class="mouth"></span>
+                <span class="badge-letter">B</span>
+              </div>
+              <strong class="cast-name">小企鹅 B</strong>
+              <span class="cast-role">等消息的人，不想一直手动刷新。</span>
+            </div>
+          </div>
+
+          <h3>10 格漫画分镜</h3>
+          <div class="storyboard-grid">
+            <article class="story-card">
+              <div class="story-scene">
+                <div class="story-scene-inner">
+                  <div class="mini mini-im">IM</div>
+                  <div class="bubble">我要做聊天产品，消息要马上到。</div>
+                </div>
+              </div>
+              <div class="story-copy">
+                <span class="story-step">镜头 1</span>
+                <h3>消息咖啡馆开业</h3>
+                <ul class="dialogue">
+                  <li><strong>小熊店长：</strong>客人聊天时，不能等刷新才看到消息。</li>
+                  <li><strong>旁白：</strong>IM 的第一原则是“对方发来，我立刻知道”。</li>
+                </ul>
+                <p class="knowledge">知识点：IM 的核心不是“能请求数据”，而是“服务端能主动通知在线用户”。</p>
+              </div>
+            </article>
+
+            <article class="story-card">
+              <div class="story-scene">
+                <div class="story-scene-inner">
+                  <div class="mini mini-http">H</div>
+                  <div class="motion-line slow"></div>
+                  <div class="bubble">你问一次，我答一次。</div>
+                </div>
+              </div>
+              <div class="story-copy">
+                <span class="story-step">镜头 2</span>
+                <h3>小 H 自信登场</h3>
+                <ul class="dialogue">
+                  <li><strong>小 H：</strong>登录、列表、历史消息，我都能稳稳送到。</li>
+                  <li><strong>小熊店长：</strong>很好，你很适合做基础接口。</li>
+                </ul>
+                <p class="knowledge">知识点：HTTP 适合客户端主动发起的一次性请求。</p>
+              </div>
+            </article>
+
+            <article class="story-card">
+              <div class="story-scene">
+                <div class="story-scene-inner">
+                  <div class="mini mini-b">B</div>
+                  <div class="motion-line"></div>
+                  <div class="mini mini-http">H</div>
+                  <div class="motion-line"></div>
+                  <div class="mini mini-im">S</div>
+                </div>
+              </div>
+              <div class="story-copy">
+                <span class="story-step">镜头 3</span>
+                <h3>会话列表请求成功</h3>
+                <ul class="dialogue">
+                  <li><strong>小企鹅 B：</strong>小 H，帮我拿一下会话列表。</li>
+                  <li><strong>小 H：</strong>收到，马上带回来。</li>
+                </ul>
+                <p class="knowledge">知识点：打开页面、拉列表、查历史，用 HTTP 很合适。</p>
+              </div>
+            </article>
+
+            <article class="story-card">
+              <div class="story-scene">
+                <div class="story-scene-inner">
+                  <div class="mini mini-a">A</div>
+                  <div class="bubble">你好，在吗？</div>
+                  <div class="motion-line slow"></div>
+                  <div class="mini mini-b">B</div>
+                </div>
+              </div>
+              <div class="story-copy">
+                <span class="story-step">镜头 4</span>
+                <h3>新消息来了，但没人问</h3>
+                <ul class="dialogue">
+                  <li><strong>小猫 A：</strong>我发消息啦。</li>
+                  <li><strong>小 H：</strong>可是小企鹅没有发请求，我没法主动敲门。</li>
+                </ul>
+                <p class="knowledge">知识点：普通 HTTP 主要是客户端请求、服务端响应，不擅长服务端主动推送。</p>
+              </div>
+            </article>
+
+            <article class="story-card">
+              <div class="story-scene">
+                <div class="story-scene-inner">
+                  <div class="mini mini-b">B</div>
+                  <div class="bubble">有新消息吗？</div>
+                  <div class="motion-line slow"></div>
+                  <div class="mini mini-http">H</div>
+                  <div class="bubble">暂时没有。</div>
+                </div>
+              </div>
+              <div class="story-copy">
+                <span class="story-step">镜头 5</span>
+                <h3>轮询开始空跑</h3>
+                <ul class="dialogue">
+                  <li><strong>小企鹅 B：</strong>那我每 3 秒问一次吧。</li>
+                  <li><strong>小 H：</strong>可以是可以，但大多数时候我都白跑。</li>
+                </ul>
+                <p class="knowledge">知识点：HTTP 轮询能凑合，但会带来延迟、耗电、流量和空请求。</p>
+              </div>
+            </article>
+
+            <article class="story-card">
+              <div class="story-scene">
+                <div class="story-scene-inner">
+                  <div class="mini mini-ws">W</div>
+                  <div class="motion-line live"></div>
+                  <div class="mini mini-im">S</div>
+                  <div class="motion-line live"></div>
+                  <div class="mini mini-b">B</div>
+                </div>
+              </div>
+              <div class="story-copy">
+                <span class="story-step">镜头 6</span>
+                <h3>小 W 接上线</h3>
+                <ul class="dialogue">
+                  <li><strong>小 W：</strong>我可以保持连接，服务端有消息就立刻告诉客户端。</li>
+                  <li><strong>小熊店长：</strong>这才像聊天产品。</li>
+                </ul>
+                <p class="knowledge">知识点：WebSocket 建立长连接后，服务端可以主动推送。</p>
+              </div>
+            </article>
+
+            <article class="story-card">
+              <div class="story-scene">
+                <div class="story-scene-inner">
+                  <div class="mini mini-a">A</div>
+                  <div class="motion-line live"></div>
+                  <div class="mini mini-ws">W</div>
+                  <div class="motion-line live"></div>
+                  <div class="mini mini-b">B</div>
+                </div>
+              </div>
+              <div class="story-copy">
+                <span class="story-step">镜头 7</span>
+                <h3>消息实时到达</h3>
+                <ul class="dialogue">
+                  <li><strong>小猫 A：</strong>你好！</li>
+                  <li><strong>小 W：</strong>已收到，马上推给小企鹅。</li>
+                </ul>
+                <p class="knowledge">知识点：在线消息收发适合走 WebSocket，体验接近实时。</p>
+              </div>
+            </article>
+
+            <article class="story-card">
+              <div class="story-scene">
+                <div class="story-scene-inner">
+                  <div class="bubble">已读</div>
+                  <div class="mini mini-ws">W</div>
+                  <div class="bubble">输入中</div>
+                  <div class="bubble">撤回</div>
+                </div>
+              </div>
+              <div class="story-copy">
+                <span class="story-step">镜头 8</span>
+                <h3>实时状态气泡飞起来</h3>
+                <ul class="dialogue">
+                  <li><strong>小 W：</strong>已读、输入中、撤回、在线状态，都可以从这条通道走。</li>
+                  <li><strong>小 H：</strong>这些小事件让我一直轮询就太忙了。</li>
+                </ul>
+                <p class="knowledge">知识点：IM 不只是消息，还有很多小而频繁的实时状态。</p>
+              </div>
+            </article>
+
+            <article class="story-card">
+              <div class="story-scene">
+                <div class="story-scene-inner">
+                  <div class="mini mini-http">H</div>
+                  <div class="bubble">历史、上传、补拉</div>
+                  <div class="mini mini-ws">W</div>
+                  <div class="bubble">消息、ack、状态</div>
+                </div>
+              </div>
+              <div class="story-copy">
+                <span class="story-step">镜头 9</span>
+                <h3>分工合作</h3>
+                <ul class="dialogue">
+                  <li><strong>小熊店长：</strong>小 H 管稳定接口，小 W 管实时通道。</li>
+                  <li><strong>小 H 和小 W：</strong>合作，才是 IM 的正确姿势。</li>
+                </ul>
+                <p class="knowledge">知识点：IM 不是 HTTP 和 WebSocket 二选一，而是组合使用。</p>
+              </div>
+            </article>
+
+            <article class="story-card">
+              <div class="story-scene">
+                <div class="story-scene-inner">
+                  <div class="mini mini-im">IM</div>
+                  <div class="bubble">HTTP 打基础，WebSocket 负责实时。</div>
+                </div>
+              </div>
+              <div class="story-copy">
+                <span class="story-step">镜头 10</span>
+                <h3>收尾标语</h3>
+                <ul class="dialogue">
+                  <li><strong>小熊店长：</strong>列表慢慢拿可以，消息必须马上到。</li>
+                  <li><strong>旁白：</strong>这就是 IM 必须使用 WebSocket 的原因。</li>
+                </ul>
+                <p class="knowledge">知识点：HTTP 初始化与补偿，WebSocket 实时收发，系统推送兜底离线提醒。</p>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <section>
+          <h2>三、HTTP 和 WebSocket 的本质区别</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>对比项</th>
+                <th>HTTP</th>
+                <th>WebSocket</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>连接方式</td>
+                <td>一次请求对应一次响应。请求结束后，这次业务交互就结束。</td>
+                <td>先通过 HTTP 握手升级，之后保持一条长连接。</td>
+              </tr>
+              <tr>
+                <td>通信方向</td>
+                <td>主要由客户端发起，服务端被动响应。</td>
+                <td>全双工通信，客户端和服务端都可以主动发送数据。</td>
+              </tr>
+              <tr>
+                <td>服务端主动推送</td>
+                <td>普通 HTTP 不擅长。通常要靠轮询、长轮询或额外推送服务绕开。</td>
+                <td>天然支持。服务端收到新消息后，可以立刻推给在线客户端。</td>
+              </tr>
+              <tr>
+                <td>实时性</td>
+                <td>取决于客户端多久请求一次。轮询间隔越长，消息越慢；间隔越短，成本越高。</td>
+                <td>消息可以在毫秒级到达在线客户端，体验接近实时。</td>
+              </tr>
+              <tr>
+                <td>请求开销</td>
+                <td>频繁轮询会反复携带请求头、Cookie、鉴权等信息，浪费流量和服务端资源。</td>
+                <td>握手后复用同一条连接，适合频繁、小包、双向事件。</td>
+              </tr>
+              <tr>
+                <td>适合业务</td>
+                <td>登录、REST API、列表、分页、搜索、上传下载、历史消息补拉。</td>
+                <td>实时消息、在线状态、输入中、已读回执、撤回通知、心跳、断线重连后的同步触发。</td>
+              </tr>
+              <tr>
+                <td>复杂度</td>
+                <td>简单、成熟、易缓存、易调试。</td>
+                <td>需要处理连接管理、鉴权、心跳、重连、消息确认、离线补偿。</td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+
+        <section>
+          <h2>四、通信流程差异</h2>
+          <h3>1. 普通 HTTP：客户端问一次，服务端答一次</h3>
+          <p>
+            HTTP 的模型很适合“我现在要一份数据”的场景。例如打开会话列表、拉取历史消息、提交登录表单。问题是：如果朋友在 3 秒后给你发了新消息，服务端不能凭空通过这次已经结束的 HTTP 请求再把消息塞回来。
+          </p>
+          <div class="diagram">
+            <p class="diagram-title">普通 HTTP 请求响应</p>
+            <pre class="mermaid">
+sequenceDiagram
+  participant C as "客户端"
+  participant S as "服务端"
+  C->>S: "GET /conversation"
+  S-->>C: "返回会话列表"
+  Note over C,S: "请求结束，连接交互完成"
+  S--xC: "后续新消息无法通过已结束请求主动推送"
+            </pre>
+          </div>
+
+          <h3>2. HTTP 轮询：反复问“有没有新消息”</h3>
+          <p>
+            如果只用 HTTP 做 IM，常见补救办法是轮询：客户端每隔几秒请求一次 <code>/messages/sync</code>。这能勉强做出“似乎会更新”的效果，但体验和成本都不好。
+          </p>
+          <div class="diagram">
+            <p class="diagram-title">HTTP 轮询新消息</p>
+            <pre class="mermaid">
+sequenceDiagram
+  participant C as "客户端"
+  participant S as "服务端"
+  loop "每 3 秒轮询一次"
+    C->>S: "GET /messages/sync?cursor=100"
+    alt "没有新消息"
+      S-->>C: "空数组"
+    else "有新消息"
+      S-->>C: "返回新消息"
+    end
+  end
+  Note over C,S: "间隔短：耗电耗流量；间隔长：消息到达慢"
+            </pre>
+          </div>
+
+          <h3>3. WebSocket：连接保持，双方随时说话</h3>
+          <p>
+            WebSocket 的关键变化是：客户端登录后建立一条持续存在的连接。只要用户在线，服务端就能把新消息、回执、通知立即推过来。
+          </p>
+          <div class="diagram">
+            <p class="diagram-title">WebSocket 长连接实时通信</p>
+            <pre class="mermaid">
+sequenceDiagram
+  participant A as "用户 A 客户端"
+  participant G as "WebSocket 网关"
+  participant B as "用户 B 客户端"
+  A->>G: "连接 WebSocket 并携带 token"
+  G-->>A: "鉴权通过，连接保持"
+  B->>G: "连接 WebSocket 并携带 token"
+  G-->>B: "鉴权通过，连接保持"
+  A->>G: "发送消息：你好"
+  G-->>A: "发送确认 ack"
+  G-->>B: "实时推送新消息：你好"
+  B->>G: "已读回执"
+  G-->>A: "实时推送已读状态"
+  Note over A,B: "双方在线时，消息和状态都能实时双向流动"
+            </pre>
+          </div>
+        </section>
+
+        <section>
+          <h2>五、为什么 IM 产品必须用 WebSocket</h2>
+          <div class="grid-2">
+            <div class="card">
+              <h3>1. 新消息必须由服务端主动推送</h3>
+              <p>
+                IM 的消息不是用户自己主动刷新出来的，而是别人随时发来的。用户 A 发消息给用户 B 时，B 可能什么都没点，服务端也必须立刻通知 B。
+              </p>
+              <p class="bad">普通 HTTP 的问题：B 不请求，服务端就很难主动告诉 B。</p>
+              <p class="good">WebSocket 的优势：B 在线时连接一直在，服务端可以直接推送。</p>
+            </div>
+            <div class="card">
+              <h3>2. 轮询会造成延迟和浪费</h3>
+              <p>
+                如果每 5 秒轮询一次，用户最多可能等 5 秒才看到消息；如果每 1 秒轮询一次，请求量、耗电和服务端压力都会上升。
+              </p>
+              <p class="bad">普通 HTTP 的问题：实时性和成本之间很难平衡。</p>
+              <p class="good">WebSocket 的优势：没有消息时不必反复请求，有消息时立即推送。</p>
+            </div>
+            <div class="card">
+              <h3>3. IM 不只有消息，还有很多实时状态</h3>
+              <p>
+                输入中、已读、撤回、在线状态、离线重连、对方正在录音，这些都是“小而频繁”的事件。它们用 HTTP 轮询会很笨重。
+              </p>
+              <p class="bad">普通 HTTP 的问题：每种状态都可能变成一次请求或一次轮询。</p>
+              <p class="good">WebSocket 的优势：同一条连接承载多种实时事件。</p>
+            </div>
+            <div class="card">
+              <h3>4. 发送、确认、补偿需要形成闭环</h3>
+              <p>
+                一条消息发出后，客户端需要知道服务端是否收到、是否落库、是否分配序列号、对方是否收到。WebSocket 更适合做连续的确认流程。
+              </p>
+              <p class="bad">普通 HTTP 的问题：只能完成发送请求，后续状态变化仍要额外查询。</p>
+              <p class="good">WebSocket 的优势：发送、ack、投递、已读可以在同一实时通道上完成。</p>
+            </div>
+          </div>
+        </section>
+
+        <section>
+          <h2>六、推荐的 IM 通信分工</h2>
+          <p>
+            对 IM 产品来说，正确架构通常不是“HTTP 或 WebSocket 二选一”，而是明确分工：HTTP 管稳定的数据接口，WebSocket 管在线实时事件。
+          </p>
+          <table>
+            <thead>
+              <tr>
+                <th>业务能力</th>
+                <th>推荐协议</th>
+                <th>说明</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>登录、注册、刷新 token</td>
+                <td>HTTP</td>
+                <td>一次请求一次响应，语义清晰，容易调试。</td>
+              </tr>
+              <tr>
+                <td>拉取会话列表</td>
+                <td>HTTP</td>
+                <td>进入页面时初始化列表，适合分页、缓存和错误重试。</td>
+              </tr>
+              <tr>
+                <td>拉取历史消息</td>
+                <td>HTTP</td>
+                <td>按游标或分页加载，适合补历史、查记录。</td>
+              </tr>
+              <tr>
+                <td>上传图片、文件、语音</td>
+                <td>HTTP</td>
+                <td>大文件上传下载不建议塞进 WebSocket 主消息通道。</td>
+              </tr>
+              <tr>
+                <td>在线收新消息</td>
+                <td>WebSocket</td>
+                <td>服务端收到消息后立即推给在线用户。</td>
+              </tr>
+              <tr>
+                <td>发送消息和服务端 ack</td>
+                <td>WebSocket</td>
+                <td>适合小包、频繁、连续的消息确认。</td>
+              </tr>
+              <tr>
+                <td>已读、撤回、输入中、在线状态</td>
+                <td>WebSocket</td>
+                <td>都是实时事件，适合同一条长连接承载。</td>
+              </tr>
+              <tr>
+                <td>后台离线提醒</td>
+                <td>APNs / FCM / 厂商推送</td>
+                <td>移动端退到后台后，系统可能限制长连接，需要系统推送补充。</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div class="diagram">
+            <p class="diagram-title">HTTP + WebSocket 在 IM 中的推荐分工</p>
+            <pre class="mermaid">
+flowchart LR
+  App["React Native 客户端"] -->|"HTTP: 登录、列表、历史、上传"| API["HTTP API 服务"]
+  App &lt;-->|"WebSocket: 新消息、ack、已读、在线状态"| WS["WebSocket 网关"]
+  API --> DB["数据库"]
+  WS --> DB
+  WS --> MQ["消息队列 / 事件总线"]
+  MQ --> WS
+  Push["系统推送 APNs / FCM"] -->|"离线通知"| App
+  WS -->|"用户离线时触发"| Push
+            </pre>
+          </div>
+        </section>
+
+        <section>
+          <h2>七、只用 HTTP 做 IM 会遇到什么问题</h2>
+          <ol>
+            <li><strong>消息到达不稳定：</strong>轮询间隔决定延迟，用户可能明显感觉慢半拍。</li>
+            <li><strong>服务端压力浪费：</strong>大量用户在线但没有消息时，轮询仍会产生海量空请求。</li>
+            <li><strong>移动端耗电耗流量：</strong>频繁唤醒网络对手机体验很不友好。</li>
+            <li><strong>状态同步复杂：</strong>输入中、已读、撤回、在线状态都要另做查询或轮询。</li>
+            <li><strong>消息确认链路割裂：</strong>发送、服务端确认、对端投递、已读状态无法自然串起来。</li>
+            <li><strong>体验不符合用户预期：</strong>IM 用户默认期待“对方一发，我马上看到”。</li>
+          </ol>
+          <div class="warning callout">
+            <strong>关键判断：</strong>
+            如果一个产品的核心体验是“别人发生了动作，我这里要立刻知道”，那它就不能只依赖普通 HTTP 请求。IM、协同编辑、在线游戏、实时行情、直播互动都属于这类场景。
+          </div>
+        </section>
+
+        <section>
+          <h2>八、WebSocket 在 IM 中需要补齐的工程能力</h2>
+          <p>
+            WebSocket 解决的是实时通道问题，不等于自动解决 IM 的全部可靠性问题。真正的 IM 系统还需要在 WebSocket 之上设计消息协议和状态机。
+          </p>
+          <table>
+            <thead>
+              <tr>
+                <th>能力</th>
+                <th>为什么需要</th>
+                <th>常见做法</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>连接鉴权</td>
+                <td>防止未登录用户建立实时通道。</td>
+                <td>连接时携带 token，服务端校验后绑定 userId、deviceId。</td>
+              </tr>
+              <tr>
+                <td>心跳保活</td>
+                <td>及时发现断线、弱网和假在线。</td>
+                <td>客户端定时 ping，服务端 pong；超时后断开并重连。</td>
+              </tr>
+              <tr>
+                <td>消息确认 ack</td>
+                <td>客户端要知道消息是否被服务端成功接收和落库。</td>
+                <td>客户端生成 clientMsgId，服务端返回 serverMsgId、conversationSeq。</td>
+              </tr>
+              <tr>
+                <td>断线重连</td>
+                <td>移动网络会频繁切换，连接不可能永远稳定。</td>
+                <td>指数退避重连，恢复后用 cursor 补拉缺失消息。</td>
+              </tr>
+              <tr>
+                <td>消息补偿</td>
+                <td>WebSocket 推送可能因为断网错过，不能只依赖在线推送。</td>
+                <td>保留 HTTP sync 接口，按会话序列号或全局游标补齐。</td>
+              </tr>
+              <tr>
+                <td>多端同步</td>
+                <td>一个用户可能同时登录手机、平板、电脑。</td>
+                <td>服务端维护用户多连接，消息和状态按设备或用户维度分发。</td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+
+        <section>
+          <h2>九、给当前项目的落地建议</h2>
+          <h3>第一阶段：保留现有 HTTP，新增 WebSocket playground</h3>
+          <ul>
+            <li>继续用 HTTP 请求 <code>/conversation</code> 做会话列表初始化。</li>
+            <li>新增 <code>/ws</code> 或 <code>/gateway</code> WebSocket 入口。</li>
+            <li>在 React Native playground 中新增 WebSocket 连接测试页。</li>
+            <li>先实现连接、鉴权、心跳、服务端主动推送测试消息。</li>
+          </ul>
+
+          <h3>第二阶段：定义 IM 消息协议</h3>
+          <pre><code>{
+  "type": "message.send",
+  "clientMsgId": "local-uuid",
+  "conversationId": "c_1001",
+  "payload": {
+    "text": "你好"
+  }
+}</code></pre>
+          <p>建议所有 WebSocket 包都带 <code>type</code>，这样后续可以扩展消息、ack、已读、撤回、输入中、心跳等事件。</p>
+
+          <h3>第三阶段：HTTP 和 WebSocket 形成闭环</h3>
+          <ul>
+            <li>WebSocket 收实时消息。</li>
+            <li>HTTP 按 cursor 补拉断线期间漏掉的消息。</li>
+            <li>HTTP 拉历史和上传媒体。</li>
+            <li>WebSocket 推送实时状态和消息确认。</li>
+          </ul>
+        </section>
+
+        <section>
+          <h2>十、总结</h2>
+          <p>
+            HTTP 是接口请求的基础，稳定、简单、适合 CRUD 和批量数据获取；WebSocket 是在线实时通信的核心，适合服务端主动推送和频繁双向事件。IM 产品的核心体验是实时，因此不能只靠普通 HTTP。
+          </p>
+          <div class="callout">
+            <strong>最终建议：</strong>
+            当前项目应继续保留 HTTP 作为数据接口层，同时新增 WebSocket 作为实时消息通道。未来的 IM 架构应以「HTTP 初始化与补偿 + WebSocket 实时收发 + 系统推送兜底离线提醒」为主线推进。
+          </div>
+        </section>
+
+        <section>
+          <h2>参考资料</h2>
+          <ul>
+            <li><a href="https://developer.mozilla.org/en-US/docs/Web/API/WebSockets_API">MDN WebSocket API</a></li>
+            <li><a href="https://www.rfc-editor.org/rfc/rfc6455">RFC 6455: The WebSocket Protocol</a></li>
+            <li><a href="https://www.rfc-editor.org/rfc/rfc9110">RFC 9110: HTTP Semantics</a></li>
+            <li><a href="https://reactnative.dev/docs/network">React Native Networking</a></li>
+          </ul>
+        </section>
+      </main>
+
+      <footer>
+        <p>文档位置：<code>docs/research/project/websocket_vs_http.html</code></p>
+        <p>建议配套阅读：已有 <code>GET /conversation</code> HTTP 请求示例，以及后续 WebSocket gateway playground 实现。</p>
+      </footer>
+    </article>
+  </div>
+
+  <script type="module">
+    import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: "default",
+      securityLevel: "strict",
+      flowchart: {
+        htmlLabels: true,
+        curve: "basis"
+      },
+      sequence: {
+        mirrorActors: false,
+        showSequenceNumbers: false
+      }
+    });
+  </script>
+</body>
+</html>

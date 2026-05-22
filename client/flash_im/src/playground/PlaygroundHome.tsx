@@ -9,10 +9,16 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 type PlaygroundHomeProps = {
+  onOpenConversation: () => void;
   onOpenFireworks: () => void;
+  onOpenHeartbeat: () => void;
 };
 
-function PlaygroundHome({ onOpenFireworks }: PlaygroundHomeProps) {
+function PlaygroundHome({
+  onOpenConversation,
+  onOpenFireworks,
+  onOpenHeartbeat,
+}: PlaygroundHomeProps) {
   return (
     <SafeAreaView style={styles.screen}>
       <ScrollView
@@ -27,6 +33,42 @@ function PlaygroundHome({ onOpenFireworks }: PlaygroundHomeProps) {
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>案例</Text>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="打开心跳通信案例"
+            onPress={onOpenHeartbeat}
+            style={({ pressed }) => [
+              styles.caseCard,
+              pressed && styles.caseCardPressed,
+            ]}
+          >
+            <View style={[styles.caseAccent, styles.heartbeatAccent]} />
+            <View style={styles.caseCopy}>
+              <Text style={styles.caseTitle}>心跳通信</Text>
+              <Text style={styles.caseDescription}>
+                连接 WebSocket，自动发送 ping，验证实时连接状态和 echo。
+              </Text>
+            </View>
+            <Text style={styles.caseArrow}>›</Text>
+          </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="打开会话请求案例"
+            onPress={onOpenConversation}
+            style={({ pressed }) => [
+              styles.caseCard,
+              pressed && styles.caseCardPressed,
+            ]}
+          >
+            <View style={[styles.caseAccent, styles.conversationAccent]} />
+            <View style={styles.caseCopy}>
+              <Text style={styles.caseTitle}>conversation</Text>
+              <Text style={styles.caseDescription}>
+                使用 axios 请求后端会话列表，验证请求配置和实体映射。
+              </Text>
+            </View>
+            <Text style={styles.caseArrow}>›</Text>
+          </Pressable>
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="打开烟花秀案例"
@@ -99,6 +141,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     borderWidth: 1,
     flexDirection: 'row',
+    marginBottom: 12,
     minHeight: 88,
     paddingHorizontal: 16,
     paddingVertical: 14,
@@ -113,6 +156,12 @@ const styles = StyleSheet.create({
     height: 44,
     marginRight: 14,
     width: 6,
+  },
+  conversationAccent: {
+    backgroundColor: '#22d3ee',
+  },
+  heartbeatAccent: {
+    backgroundColor: '#34d399',
   },
   caseCopy: {
     flex: 1,

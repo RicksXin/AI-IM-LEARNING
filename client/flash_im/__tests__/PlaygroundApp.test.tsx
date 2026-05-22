@@ -19,7 +19,7 @@ jest.mock('react-native-safe-area-context', () => {
   };
 });
 
-test('playground app exposes the fireworks case', async () => {
+test('playground app exposes playground cases', async () => {
   let renderer: ReactTestRenderer.ReactTestRenderer | undefined;
 
   await ReactTestRenderer.act(async () => {
@@ -32,6 +32,22 @@ test('playground app exposes the fireworks case', async () => {
       typeof node.props.onPress === 'function',
   );
 
+  const conversationButtons = renderer?.root.findAll(
+    node =>
+      node.props.accessibilityLabel === '打开会话请求案例' &&
+      typeof node.props.onPress === 'function',
+  );
+
+  const heartbeatButtons = renderer?.root.findAll(
+    node =>
+      node.props.accessibilityLabel === '打开心跳通信案例' &&
+      typeof node.props.onPress === 'function',
+  );
+
   expect(fireworksButtons).toHaveLength(1);
+  expect(conversationButtons).toHaveLength(1);
+  expect(heartbeatButtons).toHaveLength(1);
   expect(JSON.stringify(renderer?.toJSON())).toContain('烟花秀');
+  expect(JSON.stringify(renderer?.toJSON())).toContain('conversation');
+  expect(JSON.stringify(renderer?.toJSON())).toContain('心跳通信');
 });

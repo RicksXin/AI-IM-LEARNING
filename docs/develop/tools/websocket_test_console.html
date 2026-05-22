@@ -1,0 +1,439 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>WebSocket 测试台</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f5f7fb;
+      --paper: #ffffff;
+      --ink: #172033;
+      --muted: #647085;
+      --line: #dde5ef;
+      --soft: #eef4fa;
+      --accent: #176b87;
+      --good: #15803d;
+      --bad: #b91c1c;
+      --warn: #a05a00;
+      --shadow: 0 18px 48px rgba(23, 32, 51, 0.08);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif;
+      line-height: 1.65;
+    }
+
+    button,
+    input,
+    textarea {
+      font: inherit;
+    }
+
+    .page {
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 40px 24px 72px;
+    }
+
+    .panel {
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: var(--paper);
+      box-shadow: var(--shadow);
+    }
+
+    header {
+      padding: 36px 36px 26px;
+      border-bottom: 1px solid var(--line);
+      background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(30px, 5vw, 46px);
+      line-height: 1.18;
+      letter-spacing: 0;
+    }
+
+    .subtitle {
+      max-width: 760px;
+      margin: 14px 0 0;
+      color: var(--muted);
+      font-size: 16px;
+    }
+
+    main {
+      padding: 28px 36px 36px;
+    }
+
+    .status-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 18px;
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      min-height: 32px;
+      padding: 5px 12px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: #ffffff;
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .status-dot {
+      width: 9px;
+      height: 9px;
+      margin-right: 8px;
+      border-radius: 50%;
+      background: var(--muted);
+    }
+
+    .status-open .status-dot {
+      background: var(--good);
+    }
+
+    .status-connecting .status-dot {
+      background: var(--warn);
+    }
+
+    .status-closed .status-dot,
+    .status-error .status-dot {
+      background: var(--bad);
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 180px;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 7px;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    input,
+    textarea {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #ffffff;
+      color: var(--ink);
+      outline: none;
+    }
+
+    input:focus,
+    textarea:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(23, 107, 135, 0.12);
+    }
+
+    input {
+      min-height: 46px;
+      padding: 10px 12px;
+    }
+
+    textarea {
+      min-height: 108px;
+      resize: vertical;
+      padding: 12px;
+    }
+
+    .button-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin: 14px 0 24px;
+    }
+
+    button {
+      min-height: 42px;
+      padding: 9px 15px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #ffffff;
+      color: var(--ink);
+      cursor: pointer;
+      font-weight: 800;
+    }
+
+    button:hover:not(:disabled) {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    button:disabled {
+      cursor: not-allowed;
+      opacity: 0.45;
+    }
+
+    .primary {
+      border-color: var(--accent);
+      background: var(--accent);
+      color: #ffffff;
+    }
+
+    .primary:hover:not(:disabled) {
+      color: #ffffff;
+      filter: brightness(0.95);
+    }
+
+    .danger {
+      border-color: rgba(185, 28, 28, 0.28);
+      color: var(--bad);
+    }
+
+    .log-card {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: #fbfdff;
+    }
+
+    .log-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .log-title {
+      margin: 0;
+      font-size: 16px;
+      font-weight: 900;
+    }
+
+    .log {
+      min-height: 280px;
+      max-height: 420px;
+      margin: 0;
+      overflow: auto;
+      padding: 16px;
+      color: #26384d;
+      font-family: "Cascadia Code", "JetBrains Mono", Consolas, monospace;
+      font-size: 13px;
+      line-height: 1.65;
+      white-space: pre-wrap;
+    }
+
+    .hint {
+      margin: 18px 0 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    @media (max-width: 720px) {
+      .page {
+        padding: 0;
+      }
+
+      .panel {
+        border-width: 0;
+        border-radius: 0;
+      }
+
+      header,
+      main {
+        padding-left: 22px;
+        padding-right: 22px;
+      }
+
+      .grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <section class="panel">
+      <header>
+        <h1>WebSocket 测试台</h1>
+        <p class="subtitle">
+          用来快速验证后端 <code>/ws</code> playground：连接后应收到欢迎消息，发送文本后应收到 <code>echo: 原始消息</code>。
+        </p>
+      </header>
+
+      <main>
+        <div class="status-row">
+          <span id="statusPill" class="status-pill status-closed">
+            <span class="status-dot"></span>
+            <span id="statusText">未连接</span>
+          </span>
+          <span class="status-pill">默认端点：ws://localhost:8080/ws</span>
+        </div>
+
+        <div class="grid">
+          <div>
+            <label for="urlInput">WebSocket 地址</label>
+            <input id="urlInput" value="ws://localhost:8080/ws" autocomplete="off" />
+          </div>
+          <div>
+            <label>&nbsp;</label>
+            <button id="connectButton" class="primary" type="button">连接</button>
+          </div>
+        </div>
+
+        <label for="messageInput">发送文本</label>
+        <textarea id="messageInput">hello im</textarea>
+
+        <div class="button-row">
+          <button id="sendButton" class="primary" type="button" disabled>发送消息</button>
+          <button id="closeButton" class="danger" type="button" disabled>断开连接</button>
+          <button id="clearButton" type="button">清空日志</button>
+        </div>
+
+        <section class="log-card">
+          <div class="log-header">
+            <h2 class="log-title">连接日志</h2>
+            <button id="copyButton" type="button">复制日志</button>
+          </div>
+          <pre id="logOutput" class="log"></pre>
+        </section>
+
+        <p class="hint">
+          使用方式：先在 <code>server</code> 目录运行 <code>go run .</code>，再打开本页面并点击“连接”。
+        </p>
+      </main>
+    </section>
+  </div>
+
+  <script>
+    const urlInput = document.querySelector("#urlInput");
+    const messageInput = document.querySelector("#messageInput");
+    const connectButton = document.querySelector("#connectButton");
+    const sendButton = document.querySelector("#sendButton");
+    const closeButton = document.querySelector("#closeButton");
+    const clearButton = document.querySelector("#clearButton");
+    const copyButton = document.querySelector("#copyButton");
+    const logOutput = document.querySelector("#logOutput");
+    const statusPill = document.querySelector("#statusPill");
+    const statusText = document.querySelector("#statusText");
+
+    let socket = null;
+
+    function timestamp() {
+      return new Date().toLocaleTimeString("zh-CN", { hour12: false });
+    }
+
+    function appendLog(type, message) {
+      logOutput.textContent += `[${timestamp()}] ${type} ${message}\n`;
+      logOutput.scrollTop = logOutput.scrollHeight;
+    }
+
+    function setStatus(state, label) {
+      statusPill.className = `status-pill status-${state}`;
+      statusText.textContent = label;
+    }
+
+    function updateButtons() {
+      const isOpen = socket && socket.readyState === WebSocket.OPEN;
+      const isConnecting = socket && socket.readyState === WebSocket.CONNECTING;
+
+      connectButton.disabled = Boolean(isOpen || isConnecting);
+      sendButton.disabled = !isOpen;
+      closeButton.disabled = !socket || socket.readyState === WebSocket.CLOSED;
+    }
+
+    function connect() {
+      const url = urlInput.value.trim();
+      if (!url) {
+        appendLog("ERROR", "请先输入 WebSocket 地址");
+        return;
+      }
+
+      if (socket && socket.readyState !== WebSocket.CLOSED) {
+        appendLog("WARN", "已有连接，请先断开");
+        return;
+      }
+
+      setStatus("connecting", "连接中");
+      appendLog("CONNECT", url);
+      socket = new WebSocket(url);
+      updateButtons();
+
+      socket.addEventListener("open", () => {
+        setStatus("open", "已连接");
+        appendLog("OPEN", "连接建立");
+        updateButtons();
+      });
+
+      socket.addEventListener("message", event => {
+        appendLog("RECV", event.data);
+      });
+
+      socket.addEventListener("error", () => {
+        setStatus("error", "连接错误");
+        appendLog("ERROR", "WebSocket 连接发生错误，请确认后端是否运行");
+        updateButtons();
+      });
+
+      socket.addEventListener("close", event => {
+        setStatus("closed", "已断开");
+        appendLog("CLOSE", `code=${event.code} reason=${event.reason || "(empty)"}`);
+        updateButtons();
+      });
+    }
+
+    function sendMessage() {
+      if (!socket || socket.readyState !== WebSocket.OPEN) {
+        appendLog("ERROR", "连接未建立，无法发送");
+        return;
+      }
+
+      const message = messageInput.value;
+      socket.send(message);
+      appendLog("SEND", message);
+    }
+
+    function closeSocket() {
+      if (!socket) {
+        return;
+      }
+
+      appendLog("CLOSE", "主动断开连接");
+      socket.close(1000, "manual close");
+    }
+
+    connectButton.addEventListener("click", connect);
+    sendButton.addEventListener("click", sendMessage);
+    closeButton.addEventListener("click", closeSocket);
+    clearButton.addEventListener("click", () => {
+      logOutput.textContent = "";
+    });
+    copyButton.addEventListener("click", async () => {
+      await navigator.clipboard.writeText(logOutput.textContent);
+      appendLog("COPY", "日志已复制");
+    });
+    messageInput.addEventListener("keydown", event => {
+      if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
+        sendMessage();
+      }
+    });
+
+    appendLog("READY", "启动后端后点击连接。发送消息可用 Ctrl/Command + Enter。");
+    updateButtons();
+  </script>
+</body>
+</html>

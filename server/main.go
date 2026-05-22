@@ -68,6 +68,7 @@ func setupRouter() *gin.Engine {
 
 	router.GET("/v", handleVersion)
 	router.GET("/conversation", handleConversations)
+	router.GET("/ws", handleWebSocket)
 
 	return router
 }
@@ -87,10 +88,12 @@ func printAccessURLs(host string, port string) {
 	log.Printf("server listening on %s", net.JoinHostPort(host, port))
 	log.Printf("version endpoint: http://localhost:%s/v", port)
 	log.Printf("conversation endpoint: http://localhost:%s/conversation", port)
+	log.Printf("websocket endpoint: ws://localhost:%s/ws", port)
 
 	for _, ip := range localIPv4s() {
 		log.Printf("version endpoint: http://%s:%s/v", ip, port)
 		log.Printf("conversation endpoint: http://%s:%s/conversation", ip, port)
+		log.Printf("websocket endpoint: ws://%s:%s/ws", ip, port)
 	}
 }
 
