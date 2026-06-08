@@ -1,0 +1,780 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>即时通信产品用户认证系统基础概念梳理</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f6f7f9;
+      --paper: #ffffff;
+      --ink: #172033;
+      --muted: #5f6878;
+      --line: #dce2ea;
+      --soft: #eef3f8;
+      --accent: #176b87;
+      --accent-2: #7d4f1d;
+      --good: #197642;
+      --warn: #a05a00;
+      --bad: #a33030;
+      --code-bg: #101827;
+      --code-ink: #e8eef8;
+      --shadow: 0 18px 48px rgba(23, 32, 51, 0.08);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif;
+      line-height: 1.72;
+    }
+
+    a {
+      color: var(--accent);
+      text-decoration: none;
+      border-bottom: 1px solid rgba(23, 107, 135, 0.28);
+    }
+
+    a:hover {
+      border-bottom-color: currentColor;
+    }
+
+    code,
+    pre {
+      font-family: "Cascadia Code", "JetBrains Mono", Consolas, monospace;
+    }
+
+    code {
+      padding: 0.12em 0.35em;
+      border-radius: 4px;
+      background: #edf2f7;
+      color: #26384d;
+      font-size: 0.92em;
+    }
+
+    pre {
+      margin: 16px 0 24px;
+      padding: 18px;
+      overflow-x: auto;
+      border-radius: 8px;
+      background: var(--code-bg);
+      color: var(--code-ink);
+      line-height: 1.58;
+    }
+
+    pre code {
+      padding: 0;
+      background: transparent;
+      color: inherit;
+      font-size: 0.94em;
+    }
+
+    .page {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 40px 24px 72px;
+    }
+
+    .report {
+      overflow: hidden;
+      background: var(--paper);
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow);
+    }
+
+    header {
+      padding: 52px 56px 36px;
+      border-bottom: 1px solid var(--line);
+      background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+    }
+
+    main {
+      padding: 0 56px 56px;
+    }
+
+    .kicker {
+      margin: 0 0 10px;
+      color: var(--accent-2);
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    h1,
+    h2,
+    h3 {
+      line-height: 1.25;
+      letter-spacing: 0;
+    }
+
+    h1 {
+      max-width: 980px;
+      margin: 0;
+      font-size: clamp(34px, 5vw, 58px);
+      font-weight: 800;
+    }
+
+    h2 {
+      margin: 46px 0 16px;
+      padding-top: 8px;
+      font-size: 28px;
+      border-top: 1px solid var(--line);
+    }
+
+    h3 {
+      margin: 28px 0 10px;
+      font-size: 20px;
+    }
+
+    p {
+      margin: 10px 0;
+    }
+
+    ul,
+    ol {
+      margin: 10px 0 16px;
+      padding-left: 1.25rem;
+    }
+
+    li {
+      margin: 6px 0;
+    }
+
+    table {
+      width: 100%;
+      margin: 18px 0 26px;
+      border-collapse: collapse;
+      table-layout: fixed;
+      font-size: 15px;
+    }
+
+    th,
+    td {
+      padding: 12px 13px;
+      border: 1px solid var(--line);
+      vertical-align: top;
+      word-break: break-word;
+    }
+
+    th {
+      background: #eef3f8;
+      text-align: left;
+      font-weight: 700;
+    }
+
+    tbody tr:nth-child(even) td {
+      background: #fafbfd;
+    }
+
+    .meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 26px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      min-height: 30px;
+      padding: 4px 10px;
+      border: 1px solid var(--line);
+      background: #ffffff;
+      border-radius: 999px;
+      white-space: nowrap;
+    }
+
+    .lead {
+      max-width: 900px;
+      margin-top: 22px;
+      color: var(--muted);
+      font-size: 18px;
+    }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 14px;
+      margin: 28px 0 10px;
+    }
+
+    .metric {
+      min-height: 132px;
+      padding: 18px;
+      border: 1px solid var(--line);
+      background: var(--soft);
+      border-radius: 8px;
+    }
+
+    .metric strong {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 26px;
+      line-height: 1.12;
+    }
+
+    .metric span {
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .callout {
+      margin: 18px 0 24px;
+      padding: 16px 18px;
+      border-left: 4px solid var(--accent);
+      border-radius: 8px;
+      background: #edf7fa;
+    }
+
+    .callout strong {
+      color: var(--accent);
+    }
+
+    .warning {
+      border-left-color: var(--warn);
+      background: #fff7e8;
+    }
+
+    .warning strong {
+      color: var(--warn);
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 18px;
+      margin: 18px 0 28px;
+    }
+
+    .card {
+      padding: 18px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fbfdff;
+    }
+
+    .card h3 {
+      margin-top: 0;
+    }
+
+    .diagram {
+      margin: 18px 0 28px;
+      padding: 18px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fbfdff;
+      overflow-x: auto;
+    }
+
+    .diagram-title {
+      margin: 0 0 10px;
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .tag {
+      display: inline-block;
+      margin: 0 6px 6px 0;
+      padding: 3px 8px;
+      border-radius: 999px;
+      background: #edf2f7;
+      color: #415066;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .good {
+      color: var(--good);
+      font-weight: 700;
+    }
+
+    .warn {
+      color: var(--warn);
+      font-weight: 700;
+    }
+
+    .bad {
+      color: var(--bad);
+      font-weight: 700;
+    }
+
+    footer {
+      padding: 26px 56px 34px;
+      border-top: 1px solid var(--line);
+      background: #f8fafc;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    @media (max-width: 880px) {
+      .summary-grid,
+      .grid-2 {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 720px) {
+      .page {
+        padding: 0;
+      }
+
+      .report {
+        border-width: 0;
+      }
+
+      header,
+      main,
+      footer {
+        padding-left: 22px;
+        padding-right: 22px;
+      }
+
+      header {
+        padding-top: 36px;
+      }
+
+      table {
+        font-size: 14px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <article class="report">
+      <header>
+        <p class="kicker">IM Architecture Research</p>
+        <h1>即时通信产品用户认证系统基础概念梳理</h1>
+        <p class="lead">
+          认证系统的任务不是“让用户填个账号密码”这么简单，而是回答三个连续问题：你是谁、你现在是否仍然可信、你能做什么。对 IM 产品来说，认证还要延伸到设备登录、长连接鉴权、断线重连、踢下线和多端同步。
+        </p>
+        <div class="meta">
+          <span class="pill">场景：即时通信产品</span>
+          <span class="pill">主题：认证基础概念</span>
+          <span class="pill">重点：Token + 设备 + WebSocket</span>
+          <span class="pill">日期：2026-05-22</span>
+        </div>
+      </header>
+
+      <main>
+        <section>
+          <h2>一、一句话理解认证</h2>
+          <div class="callout">
+            <strong>认证 Authentication：</strong>确认“你是谁”。例如用户输入手机号和验证码，服务端确认这个手机号确实属于你。
+            <br />
+            <strong>鉴权 Authorization：</strong>确认“你能做什么”。例如你可以看自己的会话，但不能看别人的会话。
+          </div>
+
+          <div class="summary-grid">
+            <div class="metric">
+              <strong>账号</strong>
+              <span>用户在系统里的身份入口，比如手机号、邮箱、用户名或第三方账号。</span>
+            </div>
+            <div class="metric">
+              <strong>凭证</strong>
+              <span>证明“我是我”的材料，比如密码、短信验证码、指纹、设备密钥。</span>
+            </div>
+            <div class="metric">
+              <strong>Token</strong>
+              <span>登录成功后的通行证，后续请求不用每次都提交密码。</span>
+            </div>
+            <div class="metric">
+              <strong>会话</strong>
+              <span>服务端对“这个用户当前登录状态”的记录，常和设备、Token、过期时间绑定。</span>
+            </div>
+          </div>
+        </section>
+
+        <section>
+          <h2>二、认证系统里最容易混淆的概念</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>概念</th>
+                <th>通俗解释</th>
+                <th>在 IM 产品里的例子</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>用户 User</td>
+                <td>真实使用产品的人，系统里一般有一个稳定的 <code>user_id</code>。</td>
+                <td>小明注册了账号，系统给他分配 <code>u_10001</code>。</td>
+              </tr>
+              <tr>
+                <td>账号 Account</td>
+                <td>用户登录系统的入口，可以是手机号、邮箱、用户名或第三方账号。</td>
+                <td>小明用手机号登录，也可以绑定微信登录。</td>
+              </tr>
+              <tr>
+                <td>凭证 Credential</td>
+                <td>证明账号归属的材料。密码、验证码、Passkey、指纹都可以是凭证。</td>
+                <td>输入短信验证码，证明这个手机号当前由小明控制。</td>
+              </tr>
+              <tr>
+                <td>认证 Authentication</td>
+                <td>验证凭证是否正确，从而确认“你是谁”。</td>
+                <td>服务端验证验证码正确，确认请求者是小明。</td>
+              </tr>
+              <tr>
+                <td>鉴权 Authorization</td>
+                <td>判断一个已认证用户是否有权限做某件事。</td>
+                <td>小明能打开自己的会话，不能读取另一个用户的私聊。</td>
+              </tr>
+              <tr>
+                <td>Session</td>
+                <td>服务端保存的一段登录状态，通常和用户、设备、过期时间相关。</td>
+                <td>小明的 iPhone 有一个登录会话，Mac 也有另一个登录会话。</td>
+              </tr>
+              <tr>
+                <td>Access Token</td>
+                <td>短期通行证，用来访问 API 和建立 WebSocket。过期时间应较短。</td>
+                <td>请求 <code>/conversation</code> 时带上 Access Token。</td>
+              </tr>
+              <tr>
+                <td>Refresh Token</td>
+                <td>长期换票凭证，用来换新的 Access Token。泄露风险更高，应更谨慎保存。</td>
+                <td>App 打开后发现 Access Token 过期，用 Refresh Token 换一个新的。</td>
+              </tr>
+              <tr>
+                <td>Device</td>
+                <td>登录设备。IM 产品通常要知道“用户在哪台设备上在线”。</td>
+                <td>同一个用户同时在手机、平板、电脑在线。</td>
+              </tr>
+              <tr>
+                <td>WebSocket 鉴权</td>
+                <td>建立长连接时也要证明身份，否则服务端不知道这个连接属于谁。</td>
+                <td>连接 <code>/ws</code> 时携带 Access Token，服务端验证后绑定 userId 和 deviceId。</td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+
+        <section>
+          <h2>三、为什么 IM 认证比普通网站更特殊</h2>
+          <div class="grid-2">
+            <div class="card">
+              <h3>1. 认证不只发生在 HTTP 请求</h3>
+              <p>普通接口可以在请求头里带 Token；IM 还需要在 WebSocket 建连时认证。否则服务端无法知道这条长连接属于哪个用户、哪个设备。</p>
+            </div>
+            <div class="card">
+              <h3>2. 一个用户常有多个设备</h3>
+              <p>手机、电脑、平板都可能同时在线。认证系统不能只记“用户已登录”，还要记录“哪台设备已登录”。</p>
+            </div>
+            <div class="card">
+              <h3>3. 断线重连必须能恢复身份</h3>
+              <p>移动网络会切换。App 断线后重新连接时，需要重新证明身份，并根据游标补齐断线期间漏掉的消息。</p>
+            </div>
+            <div class="card">
+              <h3>4. 退出登录和踢下线要实时生效</h3>
+              <p>如果用户改密码、注销设备或被风控踢下线，服务端应让对应 Token 或 Session 失效，并关闭相关 WebSocket 连接。</p>
+            </div>
+          </div>
+        </section>
+
+        <section>
+          <h2>四、基础登录流程</h2>
+          <p>
+            登录流程可以理解成“拿临时通行证”。用户先提交凭证，服务端验证通过后签发 Token，并记录设备会话。
+          </p>
+
+          <div class="diagram">
+            <p class="diagram-title">账号密码或验证码登录流程</p>
+            <pre class="mermaid">
+sequenceDiagram
+  participant U as "用户"
+  participant App as "客户端"
+  participant Auth as "认证服务"
+  participant DB as "用户/会话存储"
+  U->>App: "输入手机号 + 验证码或密码"
+  App->>Auth: "POST /auth/login"
+  Auth->>DB: "校验账号和凭证"
+  DB-->>Auth: "校验通过"
+  Auth->>DB: "创建设备会话 session"
+  Auth-->>App: "Access Token + Refresh Token + userId + deviceId"
+  App-->>U: "进入会话列表"
+            </pre>
+          </div>
+
+          <div class="warning callout">
+            <strong>注意：</strong>登录成功后不要继续在客户端保存明文密码。后续请求应使用 Token，密码只在登录、改密、重新认证等必要场景出现。
+          </div>
+        </section>
+
+        <section>
+          <h2>五、HTTP 接口如何鉴权</h2>
+          <p>
+            登录后，客户端请求受保护接口时带上 Access Token。服务端验证 Token 有效、未过期、未被撤销，然后把请求映射到具体用户。
+          </p>
+
+          <div class="diagram">
+            <p class="diagram-title">HTTP API 鉴权流程</p>
+            <pre class="mermaid">
+sequenceDiagram
+  participant App as "客户端"
+  participant API as "HTTP API"
+  participant Auth as "认证/会话校验"
+  participant Biz as "业务服务"
+  App->>API: "GET /conversation + Authorization: Bearer access_token"
+  API->>Auth: "校验 Token"
+  Auth-->>API: "userId、deviceId、权限信息"
+  API->>Biz: "查询该用户的会话列表"
+  Biz-->>API: "返回会话数据"
+  API-->>App: "200 OK"
+            </pre>
+          </div>
+        </section>
+
+        <section>
+          <h2>六、Access Token 和 Refresh Token 怎么配合</h2>
+          <p>
+            一个常见做法是：Access Token 有效期短，负责访问资源；Refresh Token 有效期更长，只负责换新 Access Token。这样即使 Access Token 泄露，攻击窗口也较短。
+          </p>
+
+          <table>
+            <thead>
+              <tr>
+                <th>Token 类型</th>
+                <th>作用</th>
+                <th>生命周期</th>
+                <th>风险控制</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Access Token</td>
+                <td>访问业务 API、建立 WebSocket。</td>
+                <td>短，比如 15 分钟、30 分钟或 2 小时，具体取决于安全要求。</td>
+                <td>过期快；服务端可验证签名、过期时间、撤销状态。</td>
+              </tr>
+              <tr>
+                <td>Refresh Token</td>
+                <td>换新的 Access Token。</td>
+                <td>较长，比如几天到几周。</td>
+                <td>只发给认证服务；应可撤销、可轮换、绑定设备。</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div class="diagram">
+            <p class="diagram-title">Access Token 过期后的刷新流程</p>
+            <pre class="mermaid">
+sequenceDiagram
+  participant App as "客户端"
+  participant API as "HTTP API"
+  participant Auth as "认证服务"
+  App->>API: "请求业务接口，Access Token 已过期"
+  API-->>App: "401 Unauthorized"
+  App->>Auth: "POST /auth/refresh + Refresh Token"
+  Auth-->>App: "新的 Access Token，可选新的 Refresh Token"
+  App->>API: "重试业务接口 + 新 Access Token"
+  API-->>App: "200 OK"
+            </pre>
+          </div>
+        </section>
+
+        <section>
+          <h2>七、WebSocket 建连也必须认证</h2>
+          <p>
+            WebSocket 一旦建立，就是一条长期存在的实时通道。服务端必须在连接建立阶段确认：这条连接属于哪个用户、哪个设备、哪个会话，否则无法安全地推送私聊消息。
+          </p>
+
+          <div class="diagram">
+            <p class="diagram-title">WebSocket 认证与绑定连接</p>
+            <pre class="mermaid">
+sequenceDiagram
+  participant App as "客户端"
+  participant WS as "WebSocket 网关"
+  participant Auth as "认证/会话校验"
+  participant Conn as "连接管理器"
+  App->>WS: "连接 /ws，携带 Access Token"
+  WS->>Auth: "校验 Token 和设备会话"
+  Auth-->>WS: "userId + deviceId"
+  WS->>Conn: "绑定 connectionId 到 userId/deviceId"
+  WS-->>App: "连接成功"
+  WS-->>App: "推送新消息、ack、已读、在线状态"
+            </pre>
+          </div>
+
+          <div class="callout">
+            <strong>建议：</strong>playground 阶段可以先不做认证；进入真实 IM 阶段后，<code>/ws</code> 需要带 Token，并在服务端把连接绑定到用户和设备。
+          </div>
+        </section>
+
+        <section>
+          <h2>八、注册、登录、鉴权、退出的整体关系</h2>
+          <p>
+            如果把认证系统看成一张地图，可以分为注册、登录、访问资源、刷新 Token、退出登录几个动作。它们不是孤立接口，而是一套状态流转。
+          </p>
+
+          <div class="diagram">
+            <p class="diagram-title">认证状态流转</p>
+            <pre class="mermaid">
+flowchart LR
+  Start["未登录"] --> Register["注册账号或绑定第三方账号"]
+  Start --> Login["登录"]
+  Register --> Login
+  Login --> Session["创建用户设备会话"]
+  Session --> Token["签发 Access Token 和 Refresh Token"]
+  Token --> HTTP["访问 HTTP API"]
+  Token --> WS["建立 WebSocket 实时连接"]
+  HTTP --> Refresh{"Access Token 过期?"}
+  Refresh -- "是" --> RefreshToken["使用 Refresh Token 换新 Token"]
+  RefreshToken --> Token
+  Refresh -- "否" --> HTTP
+  Token --> Logout["退出登录 / 改密码 / 风控踢下线"]
+  Logout --> Revoke["撤销 Token 和设备会话"]
+  Revoke --> Start
+            </pre>
+          </div>
+        </section>
+
+        <section>
+          <h2>九、IM 产品的认证数据模型可以先这样理解</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>对象</th>
+                <th>核心字段</th>
+                <th>作用</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>User</td>
+                <td><code>id</code>、<code>nickname</code>、<code>avatar</code>、<code>status</code></td>
+                <td>表示一个用户主体，是会话、好友、消息的归属基础。</td>
+              </tr>
+              <tr>
+                <td>Account</td>
+                <td><code>user_id</code>、<code>type</code>、<code>identifier</code></td>
+                <td>表示登录入口，比如手机号、邮箱、用户名、微信 OpenID。</td>
+              </tr>
+              <tr>
+                <td>Credential</td>
+                <td><code>account_id</code>、<code>password_hash</code>、<code>verified_at</code></td>
+                <td>表示认证凭证。密码必须哈希存储，验证码只短期有效。</td>
+              </tr>
+              <tr>
+                <td>Device</td>
+                <td><code>id</code>、<code>user_id</code>、<code>platform</code>、<code>device_name</code></td>
+                <td>表示登录设备，用于多端在线、推送、踢下线。</td>
+              </tr>
+              <tr>
+                <td>Session</td>
+                <td><code>id</code>、<code>user_id</code>、<code>device_id</code>、<code>expires_at</code>、<code>revoked_at</code></td>
+                <td>表示一次登录态，用来判断 Token 是否还可信。</td>
+              </tr>
+              <tr>
+                <td>RefreshToken</td>
+                <td><code>token_hash</code>、<code>session_id</code>、<code>expires_at</code>、<code>rotated_at</code></td>
+                <td>用于续期。建议服务端只存哈希，泄露后可撤销。</td>
+              </tr>
+              <tr>
+                <td>Connection</td>
+                <td><code>connection_id</code>、<code>user_id</code>、<code>device_id</code>、<code>connected_at</code></td>
+                <td>表示 WebSocket 在线连接，用于实时推送和踢下线。</td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+
+        <section>
+          <h2>十、认证安全底线</h2>
+          <ul>
+            <li><strong>全程使用 TLS：</strong>登录、刷新 Token、WebSocket 都应该走安全传输；生产环境使用 <code>https</code> 和 <code>wss</code>。</li>
+            <li><strong>密码不要明文存储：</strong>只保存安全哈希，最好使用成熟算法和库。</li>
+            <li><strong>错误信息不要泄露账号存在性：</strong>登录失败时不要区分“账号不存在”和“密码错误”。</li>
+            <li><strong>Access Token 短期有效：</strong>减少泄露后的可利用时间。</li>
+            <li><strong>Refresh Token 可撤销、可轮换：</strong>退出登录、改密码、异常风险时要能让旧 Token 失效。</li>
+            <li><strong>设备会话要可管理：</strong>用户应能查看已登录设备，并主动退出某台设备。</li>
+            <li><strong>敏感操作需要重新认证：</strong>改密码、换手机号、删除账号、导出数据等不应只靠当前页面状态。</li>
+            <li><strong>记录认证日志：</strong>登录失败、刷新失败、异地登录、设备变更都应进入安全日志。</li>
+          </ul>
+        </section>
+
+        <section>
+          <h2>十一、给当前项目的分阶段建议</h2>
+          <h3>第一阶段：最小可用认证</h3>
+          <ul>
+            <li>支持手机号或用户名登录。</li>
+            <li>登录成功返回 <code>accessToken</code>、<code>refreshToken</code>、<code>userId</code>、<code>deviceId</code>。</li>
+            <li>HTTP API 通过 <code>Authorization: Bearer accessToken</code> 鉴权。</li>
+            <li>Refresh Token 支持续期和退出登录撤销。</li>
+          </ul>
+
+          <h3>第二阶段：接入 WebSocket 鉴权</h3>
+          <ul>
+            <li><code>/ws</code> 建连时携带 Access Token。</li>
+            <li>服务端校验后绑定 <code>connectionId -> userId/deviceId</code>。</li>
+            <li>Token 无效时拒绝连接或立即关闭连接。</li>
+            <li>退出登录时关闭对应设备的 WebSocket 连接。</li>
+          </ul>
+
+          <h3>第三阶段：多端与安全增强</h3>
+          <ul>
+            <li>支持设备列表、踢下线、改密码后全端退出。</li>
+            <li>增加登录风险控制，例如频率限制、异常 IP、验证码。</li>
+            <li>为敏感操作增加二次验证或 MFA。</li>
+            <li>将认证日志纳入监控。</li>
+          </ul>
+        </section>
+
+        <section>
+          <h2>十二、总结</h2>
+          <p>
+            对 IM 产品来说，认证系统是整个消息系统的门禁。HTTP 接口要知道是谁在请求，会话列表和历史消息要按用户隔离；WebSocket 长连接要知道是谁在线，消息才能安全推送到正确设备。
+          </p>
+          <div class="callout">
+            <strong>最终建议：</strong>先做清楚“用户、账号、设备、会话、Access Token、Refresh Token”的边界，再让 HTTP API 和 WebSocket 网关都统一依赖这套认证结果。这样后续做多端登录、踢下线、离线推送和安全风控时，地基会稳很多。
+          </div>
+        </section>
+
+        <section>
+          <h2>参考资料</h2>
+          <ul>
+            <li><a href="https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html">OWASP Authentication Cheat Sheet</a></li>
+            <li><a href="https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html">OWASP Session Management Cheat Sheet</a></li>
+            <li><a href="https://cheatsheetseries.owasp.org/cheatsheets/Authorization_Cheat_Sheet.html">OWASP Authorization Cheat Sheet</a></li>
+            <li><a href="https://www.rfc-editor.org/rfc/rfc6749">RFC 6749: The OAuth 2.0 Authorization Framework</a></li>
+            <li><a href="https://openid.net/developers/how-connect-works/">OpenID Foundation: How OpenID Connect Works</a></li>
+            <li><a href="https://openid.net/specs/openid-connect-core-1_0-final.html">OpenID Connect Core 1.0</a></li>
+          </ul>
+        </section>
+      </main>
+
+      <footer>
+        <p>文档位置：<code>docs/research/project/auth_overview.html</code></p>
+        <p>说明：本文用于梳理认证基础概念，不涉及本轮代码实现。</p>
+      </footer>
+    </article>
+  </div>
+
+  <script type="module">
+    import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: "default",
+      securityLevel: "strict",
+      flowchart: {
+        htmlLabels: true,
+        curve: "basis"
+      },
+      sequence: {
+        mirrorActors: false,
+        showSequenceNumbers: false
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,245 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>GET /user/profile curl 验证报告</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f6f7f9;
+      --paper: #ffffff;
+      --ink: #172033;
+      --muted: #5f6878;
+      --line: #dce2ea;
+      --soft: #eef3f8;
+      --accent: #176b87;
+      --good: #197642;
+      --bad: #a33030;
+      --code-bg: #101827;
+      --code-ink: #e8eef8;
+      --shadow: 0 18px 48px rgba(23, 32, 51, 0.08);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif;
+      line-height: 1.72;
+    }
+
+    code, pre {
+      font-family: "Cascadia Code", "JetBrains Mono", Consolas, monospace;
+    }
+
+    code {
+      padding: 0.12em 0.35em;
+      border-radius: 4px;
+      background: #edf2f7;
+      color: #26384d;
+      font-size: 0.92em;
+    }
+
+    pre {
+      margin: 14px 0 22px;
+      padding: 18px;
+      overflow-x: auto;
+      border-radius: 8px;
+      background: var(--code-bg);
+      color: var(--code-ink);
+      line-height: 1.58;
+    }
+
+    pre code {
+      padding: 0;
+      background: transparent;
+      color: inherit;
+    }
+
+    .page {
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 40px 24px 72px;
+    }
+
+    .doc {
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    header {
+      padding: 42px 48px 30px;
+      border-bottom: 1px solid var(--line);
+      background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+    }
+
+    main {
+      padding: 0 48px 48px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(30px, 5vw, 48px);
+      line-height: 1.18;
+      letter-spacing: 0;
+    }
+
+    h2 {
+      margin: 38px 0 14px;
+      padding-top: 8px;
+      border-top: 1px solid var(--line);
+      font-size: 24px;
+      line-height: 1.25;
+    }
+
+    p { margin: 10px 0; }
+
+    table {
+      width: 100%;
+      margin: 18px 0 24px;
+      border-collapse: collapse;
+      table-layout: fixed;
+      font-size: 15px;
+    }
+
+    th, td {
+      padding: 12px 13px;
+      border: 1px solid var(--line);
+      text-align: left;
+      vertical-align: top;
+      word-break: break-word;
+    }
+
+    th { background: var(--soft); }
+
+    .meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 22px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      min-height: 30px;
+      padding: 4px 10px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: #ffffff;
+    }
+
+    .callout {
+      margin: 18px 0 24px;
+      padding: 16px 18px;
+      border-left: 4px solid var(--accent);
+      border-radius: 8px;
+      background: #edf7fa;
+    }
+
+    .bad-callout {
+      border-left-color: var(--bad);
+      background: #fff1f2;
+    }
+
+    .pass {
+      color: var(--good);
+      font-weight: 800;
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <article class="doc">
+      <header>
+        <h1>GET /user/profile curl 验证报告</h1>
+        <p>该接口需要请求头携带 JWT token。服务端从 token 中解析 user_id，并返回模拟用户资料；缺失或无效 token 返回 401。</p>
+        <div class="meta">
+          <span class="pill">Method: GET</span>
+          <span class="pill">Path: /user/profile</span>
+          <span class="pill">验证时间：2026-06-08 15:17</span>
+        </div>
+      </header>
+
+      <main>
+        <h2>接口信息</h2>
+        <table>
+          <tbody>
+            <tr>
+              <th>请求地址</th>
+              <td><code>http://localhost:8080/user/profile</code></td>
+            </tr>
+            <tr>
+              <th>请求头</th>
+              <td><code>Authorization: Bearer &lt;token&gt;</code></td>
+            </tr>
+            <tr>
+              <th>成功响应</th>
+              <td>返回 <code>user_id</code>、<code>nickname</code>、<code>avatar</code>、<code>phone</code>。</td>
+            </tr>
+            <tr>
+              <th>失败响应</th>
+              <td>token 缺失或无效时返回 <code>401</code>。</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h2>测试 curl：成功场景</h2>
+        <pre><code>BASE_URL="http://localhost:8080"
+TOKEN="登录接口返回的 JWT"
+
+curl -sS -X GET "$BASE_URL/user/profile" \
+  -H "Authorization: Bearer $TOKEN"</code></pre>
+
+        <h2>本轮成功结果</h2>
+        <p>本轮使用 <code>POST /auth/login</code> 返回的 JWT token 请求用户资料。</p>
+        <pre><code>{
+  "user_id": "u_000001",
+  "nickname": "13800000001",
+  "avatar": "https://example.com/avatars/u_000001.png",
+  "phone": "13800000001"
+}</code></pre>
+
+        <div class="callout">
+          <p><strong class="pass">验证通过：</strong>服务端从 JWT 中解析出 <code>user_id</code>，并返回了对应的模拟用户资料。</p>
+        </div>
+
+        <h2>测试 curl：缺失 token</h2>
+        <pre><code>BASE_URL="http://localhost:8080"
+
+curl -sS -i -X GET "$BASE_URL/user/profile"</code></pre>
+
+        <h2>本轮缺失 token 结果</h2>
+        <pre><code>HTTP_STATUS:401
+{
+  "error": "token is required"
+}</code></pre>
+
+        <h2>测试 curl：无效 token</h2>
+        <pre><code>BASE_URL="http://localhost:8080"
+
+curl -sS -i -X GET "$BASE_URL/user/profile" \
+  -H "Authorization: Bearer invalid.jwt.token"</code></pre>
+
+        <h2>本轮无效 token 结果</h2>
+        <pre><code>HTTP_STATUS:401
+{
+  "error": "invalid token"
+}</code></pre>
+
+        <div class="callout bad-callout">
+          <p><strong>验证通过：</strong>缺失 token 和无效 token 都被拒绝，符合接口要求。</p>
+        </div>
+      </main>
+    </article>
+  </div>
+</body>
+</html>

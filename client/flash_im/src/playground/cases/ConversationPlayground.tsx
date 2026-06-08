@@ -4,6 +4,7 @@ import {
   createConversationBaseURL,
   defaultConversationApiConfig,
 } from '../conversation';
+import { getDefaultPlaygroundHost } from '../config/playgroundNetwork';
 import { previewConversations } from '../conversation/data/previewConversations';
 import type Conversation from '../conversation/entities/Conversation';
 import ConversationScreen from '../conversation/view/ConversationScreen';
@@ -13,7 +14,7 @@ type ConversationPlaygroundProps = {
 };
 
 function ConversationPlayground({ onBack }: ConversationPlaygroundProps) {
-  const [host, setHost] = useState(defaultConversationApiConfig.host);
+  const [host, setHost] = useState(getDefaultPlaygroundHost());
   const [port, setPort] = useState(String(defaultConversationApiConfig.port));
   const [conversations, setConversations] =
     useState<Conversation[]>(previewConversations);

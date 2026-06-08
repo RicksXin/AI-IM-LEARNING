@@ -9,15 +9,19 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 type PlaygroundHomeProps = {
+  onOpenAuth: () => void;
   onOpenConversation: () => void;
   onOpenFireworks: () => void;
   onOpenHeartbeat: () => void;
+  onOpenSecureChat: () => void;
 };
 
 function PlaygroundHome({
+  onOpenAuth,
   onOpenConversation,
   onOpenFireworks,
   onOpenHeartbeat,
+  onOpenSecureChat,
 }: PlaygroundHomeProps) {
   return (
     <SafeAreaView style={styles.screen}>
@@ -33,6 +37,42 @@ function PlaygroundHome({
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>案例</Text>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="打开认证聊天室案例"
+            onPress={onOpenSecureChat}
+            style={({ pressed }) => [
+              styles.caseCard,
+              pressed && styles.caseCardPressed,
+            ]}
+          >
+            <View style={[styles.caseAccent, styles.secureChatAccent]} />
+            <View style={styles.caseCopy}>
+              <Text style={styles.caseTitle}>认证聊天室</Text>
+              <Text style={styles.caseDescription}>
+                手机号登录后，用 JWT 完成 WebSocket 认证并进入聊天室。
+              </Text>
+            </View>
+            <Text style={styles.caseArrow}>›</Text>
+          </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="打开用户认证案例"
+            onPress={onOpenAuth}
+            style={({ pressed }) => [
+              styles.caseCard,
+              pressed && styles.caseCardPressed,
+            ]}
+          >
+            <View style={[styles.caseAccent, styles.authAccent]} />
+            <View style={styles.caseCopy}>
+              <Text style={styles.caseTitle}>用户认证</Text>
+              <Text style={styles.caseDescription}>
+                验证码登录，保存 JWT，并携带 Token 请求个人信息。
+              </Text>
+            </View>
+            <Text style={styles.caseArrow}>›</Text>
+          </Pressable>
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="打开心跳通信案例"
@@ -162,6 +202,12 @@ const styles = StyleSheet.create({
   },
   heartbeatAccent: {
     backgroundColor: '#34d399',
+  },
+  authAccent: {
+    backgroundColor: '#f7d889',
+  },
+  secureChatAccent: {
+    backgroundColor: '#07c160',
   },
   caseCopy: {
     flex: 1,

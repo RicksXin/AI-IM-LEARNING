@@ -69,6 +69,11 @@ func setupRouter() *gin.Engine {
 	router.GET("/v", handleVersion)
 	router.GET("/conversation", handleConversations)
 	router.GET("/ws", handleWebSocket)
+	router.GET("/chat_room", handleChatRoomWebSocket)
+	router.GET("/chat_room/status", chatRoomEndpointStatus)
+	router.POST("/auth/sms", handleSendSMS)
+	router.POST("/auth/login", handleLogin)
+	router.GET("/user/profile", handleUserProfile)
 
 	return router
 }
@@ -89,11 +94,19 @@ func printAccessURLs(host string, port string) {
 	log.Printf("version endpoint: http://localhost:%s/v", port)
 	log.Printf("conversation endpoint: http://localhost:%s/conversation", port)
 	log.Printf("websocket endpoint: ws://localhost:%s/ws", port)
+	log.Printf("chat room endpoint: ws://localhost:%s/chat_room", port)
+	log.Printf("auth sms endpoint: http://localhost:%s/auth/sms", port)
+	log.Printf("auth login endpoint: http://localhost:%s/auth/login", port)
+	log.Printf("user profile endpoint: http://localhost:%s/user/profile", port)
 
 	for _, ip := range localIPv4s() {
 		log.Printf("version endpoint: http://%s:%s/v", ip, port)
 		log.Printf("conversation endpoint: http://%s:%s/conversation", ip, port)
 		log.Printf("websocket endpoint: ws://%s:%s/ws", ip, port)
+		log.Printf("chat room endpoint: ws://%s:%s/chat_room", ip, port)
+		log.Printf("auth sms endpoint: http://%s:%s/auth/sms", ip, port)
+		log.Printf("auth login endpoint: http://%s:%s/auth/login", ip, port)
+		log.Printf("user profile endpoint: http://%s:%s/user/profile", ip, port)
 	}
 }
 

@@ -11,6 +11,7 @@ import {
   defaultHeartbeatApiConfig,
   HeartbeatApi,
 } from '../heartbeat';
+import { getDefaultPlaygroundHost } from '../config/playgroundNetwork';
 import type {
   HeartbeatConnectionStatus,
   HeartbeatLogEntry,
@@ -26,7 +27,7 @@ const HEARTBEAT_INTERVAL_MS = 5000;
 const HEARTBEAT_MESSAGE = 'ping';
 
 function HeartbeatPlayground({ onBack }: HeartbeatPlaygroundProps) {
-  const [host, setHost] = useState(defaultHeartbeatApiConfig.host);
+  const [host, setHost] = useState(getDefaultPlaygroundHost());
   const [port, setPort] = useState(String(defaultHeartbeatApiConfig.port));
   const [status, setStatus] =
     useState<HeartbeatConnectionStatus>('disconnected');

@@ -60,3 +60,18 @@ test('android debug can switch to the playground entry while release stays on pr
     'buildConfigField "String", "JS_MAIN_MODULE_NAME", "\\"index\\""',
   );
 });
+
+test('android debug allows local playground http while release keeps cleartext disabled', () => {
+  const manifest = readProjectFile('android/app/src/main/AndroidManifest.xml');
+  const buildGradle = readProjectFile('android/app/build.gradle');
+
+  expect(manifest).toContain(
+    'android:usesCleartextTraffic="${usesCleartextTraffic}"',
+  );
+  expect(buildGradle).toContain(
+    'manifestPlaceholders = [usesCleartextTraffic: "true"]',
+  );
+  expect(buildGradle).toContain(
+    'manifestPlaceholders = [usesCleartextTraffic: "false"]',
+  );
+});

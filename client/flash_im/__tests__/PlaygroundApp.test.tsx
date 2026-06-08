@@ -44,10 +44,26 @@ test('playground app exposes playground cases', async () => {
       typeof node.props.onPress === 'function',
   );
 
+  const authButtons = renderer?.root.findAll(
+    node =>
+      node.props.accessibilityLabel === '打开用户认证案例' &&
+      typeof node.props.onPress === 'function',
+  );
+
+  const secureChatButtons = renderer?.root.findAll(
+    node =>
+      node.props.accessibilityLabel === '打开认证聊天室案例' &&
+      typeof node.props.onPress === 'function',
+  );
+
   expect(fireworksButtons).toHaveLength(1);
   expect(conversationButtons).toHaveLength(1);
   expect(heartbeatButtons).toHaveLength(1);
+  expect(authButtons).toHaveLength(1);
+  expect(secureChatButtons).toHaveLength(1);
   expect(JSON.stringify(renderer?.toJSON())).toContain('烟花秀');
   expect(JSON.stringify(renderer?.toJSON())).toContain('conversation');
   expect(JSON.stringify(renderer?.toJSON())).toContain('心跳通信');
+  expect(JSON.stringify(renderer?.toJSON())).toContain('用户认证');
+  expect(JSON.stringify(renderer?.toJSON())).toContain('认证聊天室');
 });

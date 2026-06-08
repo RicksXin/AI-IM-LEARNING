@@ -1,0 +1,448 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>JWT 与 WebSocket 认证聊天室整合汇报</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f4f6f8;
+      --paper: #ffffff;
+      --ink: #111827;
+      --muted: #667085;
+      --line: #dde3ea;
+      --soft: #f6f8fa;
+      --green: #07c160;
+      --green-soft: #e8f7ee;
+      --dark: #182230;
+      --code-bg: #101827;
+      --code-ink: #e8eef8;
+      --shadow: 0 18px 46px rgba(17, 24, 39, 0.08);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif;
+      line-height: 1.72;
+    }
+
+    code,
+    pre {
+      font-family: "Cascadia Code", "JetBrains Mono", Consolas, monospace;
+    }
+
+    code {
+      padding: 0.12em 0.35em;
+      border-radius: 4px;
+      background: #edf2f7;
+      color: #26384d;
+      font-size: 0.92em;
+    }
+
+    pre {
+      margin: 16px 0 24px;
+      padding: 18px;
+      overflow-x: auto;
+      border-radius: 8px;
+      background: var(--code-bg);
+      color: var(--code-ink);
+      line-height: 1.58;
+    }
+
+    .page {
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 40px 24px 72px;
+    }
+
+    .doc {
+      overflow: hidden;
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      box-shadow: var(--shadow);
+    }
+
+    header {
+      padding: 52px 56px 38px;
+      border-bottom: 1px solid var(--line);
+      background: linear-gradient(180deg, #ffffff 0%, #f7faf8 100%);
+    }
+
+    main {
+      padding: 0 56px 56px;
+    }
+
+    .kicker {
+      margin: 0 0 10px;
+      color: var(--green);
+      font-size: 14px;
+      font-weight: 900;
+      letter-spacing: 0;
+      text-transform: uppercase;
+    }
+
+    h1,
+    h2,
+    h3 {
+      line-height: 1.25;
+      letter-spacing: 0;
+    }
+
+    h1 {
+      max-width: 900px;
+      margin: 0;
+      font-size: clamp(34px, 5vw, 54px);
+      font-weight: 900;
+    }
+
+    h2 {
+      margin: 44px 0 16px;
+      padding-top: 8px;
+      border-top: 1px solid var(--line);
+      font-size: 28px;
+    }
+
+    h3 {
+      margin: 26px 0 10px;
+      font-size: 20px;
+    }
+
+    p {
+      margin: 10px 0;
+    }
+
+    ul {
+      margin: 10px 0 16px;
+      padding-left: 1.25rem;
+    }
+
+    li {
+      margin: 6px 0;
+    }
+
+    .lead {
+      max-width: 880px;
+      margin-top: 22px;
+      color: var(--muted);
+      font-size: 18px;
+    }
+
+    .meta,
+    .pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 24px;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      min-height: 30px;
+      padding: 4px 10px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: #ffffff;
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .summary {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+      margin: 34px 0 8px;
+    }
+
+    .summary-card {
+      min-height: 116px;
+      padding: 18px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: var(--soft);
+    }
+
+    .summary-card strong {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 18px;
+    }
+
+    .summary-card span {
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .callout {
+      margin: 18px 0 24px;
+      padding: 16px 18px;
+      border-left: 4px solid var(--green);
+      border-radius: 8px;
+      background: var(--green-soft);
+    }
+
+    .two-col {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: 18px;
+      margin: 18px 0 24px;
+    }
+
+    .panel {
+      padding: 18px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: #fbfdff;
+    }
+
+    .panel h3 {
+      margin-top: 0;
+    }
+
+    .mermaid {
+      margin: 18px 0 24px;
+      padding: 18px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: #ffffff;
+    }
+
+    .wechat-note {
+      display: grid;
+      grid-template-columns: 130px minmax(0, 1fr);
+      gap: 18px;
+      align-items: center;
+      margin: 18px 0 24px;
+      padding: 18px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: #f7f7f7;
+    }
+
+    .mock-phone {
+      overflow: hidden;
+      height: 220px;
+      border: 8px solid #202020;
+      border-radius: 26px;
+      background: #ededed;
+      box-shadow: 0 16px 32px rgba(17, 24, 39, 0.16);
+    }
+
+    .mock-top {
+      height: 34px;
+      background: #ededed;
+      border-bottom: 1px solid #d3d3d3;
+    }
+
+    .mock-bubble {
+      max-width: 82px;
+      margin: 16px 10px;
+      padding: 8px 10px;
+      border-radius: 8px;
+      background: #ffffff;
+      font-size: 12px;
+    }
+
+    .mock-bubble.out {
+      margin-left: auto;
+      background: #95ec69;
+    }
+
+    .mock-tabs {
+      display: flex;
+      height: 36px;
+      margin-top: 42px;
+      border-top: 1px solid #d3d3d3;
+      background: #f9f9f9;
+      color: #07c160;
+      font-size: 11px;
+      font-weight: 800;
+      align-items: center;
+      justify-content: space-around;
+    }
+
+    @media (max-width: 760px) {
+      header,
+      main {
+        padding-left: 22px;
+        padding-right: 22px;
+      }
+
+      .summary,
+      .two-col,
+      .wechat-note {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <article class="doc">
+      <header>
+        <p class="kicker">Playground Integration Report</p>
+        <h1>JWT 用户认证与 WebSocket 认证聊天室整合汇报</h1>
+        <p class="lead">
+          本次将原本独立的 HTTP JWT 认证能力和 WebSocket 心跳通信能力串联成一个新的 IM playground：
+          用户先通过手机号验证码登录获得 JWT，随后使用 JWT 完成聊天室 WebSocket 连接认证，认证成功后才允许心跳和聊天消息。
+        </p>
+        <div class="meta">
+          <span class="pill">日期：2026-06-08</span>
+          <span class="pill">前端：React Native Playground</span>
+          <span class="pill">后端：Go / Gin / Gorilla WebSocket</span>
+          <span class="pill">认证：JWT</span>
+        </div>
+      </header>
+
+      <main>
+        <section>
+          <div class="summary">
+            <div class="summary-card">
+              <strong>后端新增</strong>
+              <span><code>GET /chat_room</code> WebSocket 端点，连接后第一条消息必须携带 JWT 认证。</span>
+            </div>
+            <div class="summary-card">
+              <strong>前端新增</strong>
+              <span><code>secure_chat</code> playground，整合登录、用户资料、WebSocket 认证、心跳和聊天室。</span>
+            </div>
+            <div class="summary-card">
+              <strong>界面结构</strong>
+              <span>参考微信：浅灰背景、绿色主操作、聊天气泡、底部“聊天室 / 我的”导航。</span>
+            </div>
+          </div>
+        </section>
+
+        <section>
+          <h2>整体流程</h2>
+          <p>
+            正式 IM 产品中，WebSocket 连接不能只代表“网络已连通”，还必须绑定用户身份。
+            因此本次采用“连接后第一条消息认证”的方式：WebSocket 先建立，再发送 JWT，服务端验证通过后把连接绑定到 <code>user_id</code>。
+          </p>
+          <div class="mermaid">
+sequenceDiagram
+    participant RN as "React Native Playground"
+    participant Auth as "HTTP Auth API"
+    participant WS as "WebSocket /chat_room"
+    participant Store as "JWT / User Store"
+
+    RN->>Auth: "POST /auth/sms 手机号"
+    Auth-->>RN: "返回 6 位验证码"
+    RN->>Auth: "POST /auth/login 手机号 + 验证码"
+    Auth->>Store: "校验验证码 / 登录即注册"
+    Auth-->>RN: "返回 JWT token + user_id"
+    RN->>Auth: "GET /user/profile Authorization: Bearer token"
+    Auth-->>RN: "返回用户资料"
+
+    RN->>WS: "连接 ws://host:port/chat_room"
+    WS-->>RN: "auth_required"
+    RN->>WS: "{\"type\":\"auth\",\"token\":\"JWT\"}"
+    WS->>Store: "校验 JWT 并解析 user_id"
+    alt "Token 有效"
+        WS-->>RN: "auth_success"
+        RN->>WS: "{\"type\":\"ping\"}"
+        WS-->>RN: "pong"
+        RN->>WS: "{\"type\":\"chat\",\"content\":\"hello\"}"
+        WS-->>RN: "chat message"
+    else "Token 无效"
+        WS-->>RN: "auth_failed"
+        WS--xRN: "关闭连接"
+    end
+          </div>
+        </section>
+
+        <section>
+          <h2>后端实现</h2>
+          <div class="two-col">
+            <div class="panel">
+              <h3>端点</h3>
+              <ul>
+                <li><code>GET /chat_room</code>：认证聊天室 WebSocket。</li>
+                <li><code>GET /chat_room/status</code>：普通 HTTP 状态说明，方便快速确认端点存在。</li>
+              </ul>
+            </div>
+            <div class="panel">
+              <h3>认证规则</h3>
+              <ul>
+                <li>连接建立后服务端先发送 <code>auth_required</code>。</li>
+                <li>客户端第一条业务消息必须是 <code>{"type":"auth","token":"..."}</code>。</li>
+                <li>服务端复用 JWT 解析逻辑，拿到 <code>user_id</code> 后查内存用户。</li>
+                <li>认证失败返回 <code>auth_failed</code> 并关闭连接。</li>
+              </ul>
+            </div>
+          </div>
+          <pre><code>客户端认证消息：
+{
+  "type": "auth",
+  "token": "JWT_TOKEN"
+}
+
+认证后的聊天消息：
+{
+  "type": "chat",
+  "content": "你好"
+}</code></pre>
+        </section>
+
+        <section>
+          <h2>前端实现</h2>
+          <p>
+            新增 <code>client/flash_im/src/playground/secure_chat</code> 模块，继续保持 playground 的分层方式：
+            <code>api</code> 负责 WebSocket 连接和发送消息，<code>model</code> 负责状态与消息解析，<code>view</code> 负责界面展示。
+            容器文件 <code>SecureChatPlayground.tsx</code> 负责串联 HTTP 登录与 WebSocket 认证聊天室流程。
+          </p>
+          <div class="wechat-note">
+            <div class="mock-phone">
+              <div class="mock-top"></div>
+              <div class="mock-bubble">认证成功</div>
+              <div class="mock-bubble out">你好</div>
+              <div class="mock-tabs"><span>聊天室</span><span>我的</span></div>
+            </div>
+            <div>
+              <h3>界面参考微信</h3>
+              <p>
+                页面使用浅灰背景、白色内容块、绿色主按钮、左右聊天气泡和底部双 tab。
+                “聊天室”页展示连接状态、消息列表和输入栏；“我的”页展示登录表单、用户资料、Token 预览、最近心跳和退出登录。
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <section>
+          <h2>测试覆盖</h2>
+          <ul>
+            <li>后端：新增 WebSocket 认证成功、ping/pong、聊天 echo、无效 token、认证前发送聊天消息等测试。</li>
+            <li>前端 API：覆盖 WebSocket URL、认证消息、心跳消息、聊天消息、未连接发送报错。</li>
+            <li>前端模型：覆盖服务端消息解析、异常消息、展示消息创建。</li>
+            <li>前端视图：覆盖聊天室、我的、登录、资料、退出等关键交互。</li>
+            <li>前端流程：使用 fake axios 和 fake WebSocket 跑通登录、JWT 认证、聊天、心跳和退出。</li>
+          </ul>
+          <div class="callout">
+            验证命令包括：<code>go test ./...</code>、<code>npx tsc --noEmit</code>、<code>npm run lint</code>、<code>npm test -- --watch=false</code>。
+          </div>
+        </section>
+
+        <section>
+          <h2>结论</h2>
+          <p>
+            当前 playground 已经形成一个更接近正式 IM 产品的最小闭环：HTTP 登录获取身份凭证，WebSocket 连接通过 JWT 绑定用户身份，认证后再进行心跳和聊天通信。
+            这为后续接入真实会话、群聊、离线消息、消息 ACK、重连补偿和 Token 刷新打好了边界清晰的基础。
+          </p>
+        </section>
+      </main>
+    </article>
+  </div>
+  <script type="module">
+    import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+    mermaid.initialize({ startOnLoad: true, theme: "base" });
+  </script>
+</body>
+</html>
