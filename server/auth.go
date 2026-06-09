@@ -31,8 +31,10 @@ type SMSResponse struct {
 }
 
 type LoginRequest struct {
-	Phone string `json:"phone"`
-	Code  string `json:"code"`
+	Phone     string    `json:"phone"`
+	Code      string    `json:"code"`
+	Password  string    `json:"password"`
+	LoginType LoginType `json:"login_type"`
 }
 
 type LoginResponse struct {
@@ -54,26 +56,40 @@ type authUser struct {
 	Phone    string
 }
 
+type LoginType string
+
+const (
+	LoginTypeSMS      LoginType = "sms"
+	LoginTypePassword LoginType = "password"
+)
+
 type authClaims struct {
 	UserID string `json:"user_id"`
 	jwt.RegisteredClaims
 }
 
 type authMemoryStore struct {
-	mu           sync.RWMutex
-	nextUserID   int
-	smsCodes     map[string]string
-	usersByID    map[string]authUser
-	usersByPhone map[string]authUser
+	mu               sync.RWMutex
+	nextUserID       int
+	smsCodes         map[string]string
+	usersByID        map[string]authUser
+	usersByPhone     map[string]authUser
+	passwordsByPhone map[string]string
 }
 
 func newAuthMemoryStore() *authMemoryStore {
-	return &authMemoryStore{
-		nextUserID:   1,
-		smsCodes:     map[string]string{},
-		usersByID:    map[string]authUser{},
-		usersByPhone: map[string]authUser{},
+	store := &authMemoryStore{
+		nextUserID:       1,
+		smsCodes:         map[string]string{},
+		usersByID:        map[string]authUser{},
+		usersByPhone:     map[string]authUser{},
+		passwordsByPhone: map[string]string{},
 	}
+	store.seedPasswordUser("13800000001", "im123456", "Alice")
+	store.seedPasswordUser("13800000002", "chat123456", "Bob")
+	store.seedPasswordUser("13800000003", "demo123456", "Demo User")
+
+	return store
 }
 
 var authStore = newAuthMemoryStore()
@@ -112,18 +128,29 @@ func handleLogin(c *gin.Context) {
 	}
 
 	phone := strings.TrimSpace(request.Phone)
-	code := strings.TrimSpace(request.Code)
-	if phone == "" || code == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "phone and code are required"})
+	loginType, ok := normalizeLoginType(request.LoginType)
+	if !ok {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "unsupported login_type"})
 		return
 	}
 
-	if !authStore.verifySMSCode(phone, code) {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid phone or code"})
+	if phone == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "phone is required"})
 		return
 	}
 
-	user := authStore.findOrCreateUserByPhone(phone)
+	user, err := authenticateLogin(request, phone, loginType)
+	if err != nil {
+		status := http.StatusUnauthorized
+		message := err.Error()
+		if errors.Is(err, errInvalidLoginRequest) {
+			status = http.StatusBadRequest
+			message = strings.TrimPrefix(message, errInvalidLoginRequest.Error()+": ")
+		}
+		c.JSON(status, gin.H{"error": message})
+		return
+	}
+
 	token, err := generateJWTForUser(user.UserID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to generate token"})
@@ -134,6 +161,49 @@ func handleLogin(c *gin.Context) {
 		Token:  token,
 		UserID: user.UserID,
 	})
+}
+
+var errInvalidLoginRequest = errors.New("invalid login request")
+
+func authenticateLogin(request LoginRequest, phone string, loginType LoginType) (authUser, error) {
+	switch loginType {
+	case LoginTypeSMS:
+		code := strings.TrimSpace(request.Code)
+		if code == "" {
+			return authUser{}, fmt.Errorf("%w: phone and code are required", errInvalidLoginRequest)
+		}
+
+		if !authStore.verifySMSCode(phone, code) {
+			return authUser{}, errors.New("invalid phone or code")
+		}
+
+		return authStore.findOrCreateUserByPhone(phone), nil
+	case LoginTypePassword:
+		password := strings.TrimSpace(request.Password)
+		if password == "" {
+			return authUser{}, fmt.Errorf("%w: phone and password are required", errInvalidLoginRequest)
+		}
+
+		user, ok := authStore.authenticatePassword(phone, password)
+		if !ok {
+			return authUser{}, errors.New("invalid phone or password")
+		}
+
+		return user, nil
+	default:
+		return authUser{}, fmt.Errorf("%w: unsupported login_type", errInvalidLoginRequest)
+	}
+}
+
+func normalizeLoginType(loginType LoginType) (LoginType, bool) {
+	switch loginType {
+	case "":
+		return LoginTypeSMS, true
+	case LoginTypeSMS, LoginTypePassword:
+		return loginType, true
+	default:
+		return "", false
+	}
 }
 
 func handleUserProfile(c *gin.Context) {
@@ -199,12 +269,38 @@ func (store *authMemoryStore) findOrCreateUserByPhone(phone string) authUser {
 	return user
 }
 
+func (store *authMemoryStore) authenticatePassword(phone string, password string) (authUser, bool) {
+	store.mu.RLock()
+	defer store.mu.RUnlock()
+
+	if store.passwordsByPhone[phone] != password {
+		return authUser{}, false
+	}
+
+	user, ok := store.usersByPhone[phone]
+	return user, ok
+}
+
 func (store *authMemoryStore) findUserByID(userID string) (authUser, bool) {
 	store.mu.RLock()
 	defer store.mu.RUnlock()
 
 	user, ok := store.usersByID[userID]
 	return user, ok
+}
+
+func (store *authMemoryStore) seedPasswordUser(phone string, password string, nickname string) {
+	userID := fmt.Sprintf("u_%06d", store.nextUserID)
+	user := authUser{
+		UserID:   userID,
+		Nickname: nickname,
+		Avatar:   fmt.Sprintf("https://example.com/avatars/%s.png", userID),
+		Phone:    phone,
+	}
+	store.nextUserID += 1
+	store.usersByID[user.UserID] = user
+	store.usersByPhone[phone] = user
+	store.passwordsByPhone[phone] = password
 }
 
 func generateSMSCode() (string, error) {

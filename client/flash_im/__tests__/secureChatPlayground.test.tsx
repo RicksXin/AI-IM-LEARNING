@@ -9,6 +9,7 @@ import {
   AUTH_LOGIN_PATH,
   AUTH_PROFILE_PATH,
   AUTH_SMS_PATH,
+  AuthLoginType,
   clearAuthToken,
 } from '../src/playground/auth';
 import SecureChatPlayground from '../src/playground/cases/SecureChatPlayground';
@@ -74,9 +75,7 @@ type FakeAuthClient = {
 let fakeSockets: FakeWebSocket[] = [];
 
 function mockAuthHttpClient(client: FakeAuthClient) {
-  const mockedCreate = axios.create as jest.MockedFunction<
-    typeof axios.create
-  >;
+  const mockedCreate = axios.create as jest.MockedFunction<typeof axios.create>;
 
   mockedCreate.mockReturnValue(
     client as unknown as ReturnType<typeof axios.create>,
@@ -180,6 +179,7 @@ test('secure chat playground logs in, authenticates websocket, sends chat, and l
 
   expect(client.post).toHaveBeenNthCalledWith(2, AUTH_LOGIN_PATH, {
     code: '135790',
+    login_type: AuthLoginType.Sms,
     phone: '13800000001',
   });
   expect(client.get).toHaveBeenCalledWith(AUTH_PROFILE_PATH, {

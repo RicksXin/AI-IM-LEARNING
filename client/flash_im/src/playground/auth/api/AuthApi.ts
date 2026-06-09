@@ -1,14 +1,13 @@
 import axios from 'axios';
 import type { AxiosInstance } from 'axios';
+import { AuthLoginType } from '../model/AuthLoginType';
 import AuthSession, { AuthSessionJson } from '../model/AuthSession';
 import AuthSmsResult, { AuthSmsResultJson } from '../model/AuthSmsResult';
 import {
   playgroundAuthTokenStore,
   type AuthTokenStore,
 } from '../model/AuthTokenStore';
-import AuthUserProfile, {
-  AuthUserProfileJson,
-} from '../model/AuthUserProfile';
+import AuthUserProfile, { AuthUserProfileJson } from '../model/AuthUserProfile';
 
 export type AuthApiConfig = {
   basePath?: string;
@@ -102,15 +101,27 @@ class AuthApi {
   }
 
   async login(phone: string, code: string) {
+    return this.loginWithSms(phone, code);
+  }
+
+  async loginWithSms(phone: string, code: string) {
     const response = await this.client.post<AuthSessionJson>(AUTH_LOGIN_PATH, {
       code,
+      login_type: AuthLoginType.Sms,
       phone,
     });
-    const session = AuthSession.fromJson(response.data);
 
-    this.tokenStore.saveToken(session.token);
+    return this.saveSession(response.data);
+  }
 
-    return session;
+  async loginWithPassword(phone: string, password: string) {
+    const response = await this.client.post<AuthSessionJson>(AUTH_LOGIN_PATH, {
+      login_type: AuthLoginType.Password,
+      password,
+      phone,
+    });
+
+    return this.saveSession(response.data);
   }
 
   async fetchProfile() {
@@ -134,6 +145,14 @@ class AuthApi {
 
   logout() {
     this.tokenStore.clearToken();
+  }
+
+  private saveSession(data: AuthSessionJson) {
+    const session = AuthSession.fromJson(data);
+
+    this.tokenStore.saveToken(session.token);
+
+    return session;
   }
 }
 

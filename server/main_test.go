@@ -393,7 +393,7 @@ func TestAuthSMSLoginAndProfileFlow(t *testing.T) {
 	resetAuthStoreForTest()
 
 	router := setupRouter()
-	phone := "13800000001"
+	phone := "13899990000"
 
 	smsRecorder := httptest.NewRecorder()
 	smsRequest := httptest.NewRequest(
@@ -423,7 +423,7 @@ func TestAuthSMSLoginAndProfileFlow(t *testing.T) {
 	}
 
 	loginRecorder := httptest.NewRecorder()
-	loginBody := `{"phone":"` + phone + `","code":"` + smsResponse.Code + `"}`
+	loginBody := `{"phone":"` + phone + `","code":"` + smsResponse.Code + `","login_type":"sms"}`
 	loginRequest := httptest.NewRequest(http.MethodPost, "/auth/login", bytes.NewBufferString(loginBody))
 	loginRequest.Header.Set("Content-Type", "application/json")
 
@@ -487,6 +487,63 @@ func TestAuthSMSLoginAndProfileFlow(t *testing.T) {
 	}
 }
 
+func TestAuthPasswordLoginAndProfileFlow(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	resetAuthStoreForTest()
+
+	router := setupRouter()
+	loginRecorder := httptest.NewRecorder()
+	loginBody := `{"phone":"13800000001","password":"im123456","login_type":"password"}`
+	loginRequest := httptest.NewRequest(http.MethodPost, "/auth/login", bytes.NewBufferString(loginBody))
+	loginRequest.Header.Set("Content-Type", "application/json")
+
+	router.ServeHTTP(loginRecorder, loginRequest)
+
+	if loginRecorder.Code != http.StatusOK {
+		t.Fatalf("POST /auth/login status = %d, want %d", loginRecorder.Code, http.StatusOK)
+	}
+
+	var loginResponse LoginResponse
+	if err := json.Unmarshal(loginRecorder.Body.Bytes(), &loginResponse); err != nil {
+		t.Fatalf("decode login response: %v", err)
+	}
+
+	if loginResponse.UserID == "" {
+		t.Fatal("login response user_id is empty")
+	}
+
+	if loginResponse.Token == "" {
+		t.Fatal("login response token is empty")
+	}
+
+	profileRecorder := httptest.NewRecorder()
+	profileRequest := httptest.NewRequest(http.MethodGet, "/user/profile", nil)
+	profileRequest.Header.Set("Authorization", "Bearer "+loginResponse.Token)
+
+	router.ServeHTTP(profileRecorder, profileRequest)
+
+	if profileRecorder.Code != http.StatusOK {
+		t.Fatalf("GET /user/profile status = %d, want %d", profileRecorder.Code, http.StatusOK)
+	}
+
+	var profile UserProfileResponse
+	if err := json.Unmarshal(profileRecorder.Body.Bytes(), &profile); err != nil {
+		t.Fatalf("decode profile response: %v", err)
+	}
+
+	if profile.UserID != loginResponse.UserID {
+		t.Fatalf("profile user_id = %q, want %q", profile.UserID, loginResponse.UserID)
+	}
+
+	if profile.Nickname != "Alice" {
+		t.Fatalf("profile nickname = %q, want %q", profile.Nickname, "Alice")
+	}
+
+	if profile.Phone != "13800000001" {
+		t.Fatalf("profile phone = %q, want %q", profile.Phone, "13800000001")
+	}
+}
+
 func TestLoginRejectsInvalidSMSCode(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	resetAuthStoreForTest()
@@ -504,6 +561,46 @@ func TestLoginRejectsInvalidSMSCode(t *testing.T) {
 
 	if recorder.Code != http.StatusUnauthorized {
 		t.Fatalf("POST /auth/login status = %d, want %d", recorder.Code, http.StatusUnauthorized)
+	}
+}
+
+func TestLoginRejectsInvalidPassword(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	resetAuthStoreForTest()
+
+	router := setupRouter()
+	recorder := httptest.NewRecorder()
+	request := httptest.NewRequest(
+		http.MethodPost,
+		"/auth/login",
+		bytes.NewBufferString(`{"phone":"13800000001","password":"wrong-password","login_type":"password"}`),
+	)
+	request.Header.Set("Content-Type", "application/json")
+
+	router.ServeHTTP(recorder, request)
+
+	if recorder.Code != http.StatusUnauthorized {
+		t.Fatalf("POST /auth/login status = %d, want %d", recorder.Code, http.StatusUnauthorized)
+	}
+}
+
+func TestLoginRejectsUnsupportedLoginType(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	resetAuthStoreForTest()
+
+	router := setupRouter()
+	recorder := httptest.NewRecorder()
+	request := httptest.NewRequest(
+		http.MethodPost,
+		"/auth/login",
+		bytes.NewBufferString(`{"phone":"13800000001","password":"im123456","login_type":"magic"}`),
+	)
+	request.Header.Set("Content-Type", "application/json")
+
+	router.ServeHTTP(recorder, request)
+
+	if recorder.Code != http.StatusBadRequest {
+		t.Fatalf("POST /auth/login status = %d, want %d", recorder.Code, http.StatusBadRequest)
 	}
 }
 

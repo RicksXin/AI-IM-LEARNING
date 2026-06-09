@@ -13,6 +13,10 @@ export type {
   AuthHttpClient,
   AuthRequestConfig,
 } from './api/AuthApi';
+export {
+  AuthLoginType,
+  readAuthLoginType,
+} from './model/AuthLoginType';
 export { default as AuthSession } from './model/AuthSession';
 export type {
   AuthSessionJson,

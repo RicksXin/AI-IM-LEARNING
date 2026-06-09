@@ -1,12 +1,7 @@
 import React from 'react';
-import {
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { AuthLoginType } from '../model/AuthLoginType';
 import type AuthUserProfile from '../model/AuthUserProfile';
 import AuthEndpointPanel from './AuthEndpointPanel';
 import AuthLoginView from './AuthLoginView';
@@ -20,6 +15,8 @@ type AuthScreenProps = {
   host: string;
   isLoggingIn: boolean;
   isSendingCode: boolean;
+  loginType: AuthLoginType;
+  password: string;
   phone: string;
   port: string;
   profile?: AuthUserProfile;
@@ -29,7 +26,9 @@ type AuthScreenProps = {
   onCodeChange: (value: string) => void;
   onHostChange: (value: string) => void;
   onLogin: () => void;
+  onLoginTypeChange: (value: AuthLoginType) => void;
   onLogout: () => void;
+  onPasswordChange: (value: string) => void;
   onPhoneChange: (value: string) => void;
   onPortChange: (value: string) => void;
   onSendCode: () => void;
@@ -43,6 +42,8 @@ function AuthScreen({
   host,
   isLoggingIn,
   isSendingCode,
+  loginType,
+  password,
   phone,
   port,
   profile,
@@ -52,7 +53,9 @@ function AuthScreen({
   onCodeChange,
   onHostChange,
   onLogin,
+  onLoginTypeChange,
   onLogout,
+  onPasswordChange,
   onPhoneChange,
   onPortChange,
   onSendCode,
@@ -77,13 +80,17 @@ function AuthScreen({
             <Text style={styles.backText}>返回</Text>
           </Pressable>
           <View style={styles.badge}>
-            <Text style={styles.badgeText}>{profile ? '已登录' : '未登录'}</Text>
+            <Text style={styles.badgeText}>
+              {profile ? '已登录' : '未登录'}
+            </Text>
           </View>
         </View>
 
         <Text style={styles.kicker}>Auth Playground</Text>
         <Text style={styles.title}>用户认证</Text>
-        <Text style={styles.subtitle}>验证码、JWT、个人资料请求的最小闭环。</Text>
+        <Text style={styles.subtitle}>
+          验证码、JWT、个人资料请求的最小闭环。
+        </Text>
 
         <AuthEndpointPanel
           endpointLabel={endpointLabel}
@@ -106,10 +113,14 @@ function AuthScreen({
             errorMessage={errorMessage}
             isLoggingIn={isLoggingIn}
             isSendingCode={isSendingCode}
+            loginType={loginType}
+            password={password}
             phone={phone}
             statusMessage={statusMessage}
             onCodeChange={onCodeChange}
             onLogin={onLogin}
+            onLoginTypeChange={onLoginTypeChange}
+            onPasswordChange={onPasswordChange}
             onPhoneChange={onPhoneChange}
             onSendCode={onSendCode}
           />

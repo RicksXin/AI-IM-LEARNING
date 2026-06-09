@@ -9,6 +9,7 @@ import {
   AUTH_LOGIN_PATH,
   AUTH_PROFILE_PATH,
   AUTH_SMS_PATH,
+  AuthLoginType,
   clearAuthToken,
   getAuthToken,
 } from '../src/playground/auth';
@@ -34,9 +35,7 @@ type FakeAuthClient = {
 };
 
 function mockAuthHttpClient(client: FakeAuthClient) {
-  const mockedCreate = axios.create as jest.MockedFunction<
-    typeof axios.create
-  >;
+  const mockedCreate = axios.create as jest.MockedFunction<typeof axios.create>;
 
   mockedCreate.mockReturnValue(
     client as unknown as ReturnType<typeof axios.create>,
@@ -53,27 +52,37 @@ function createSuccessfulClient(): FakeAuthClient {
         user_id: 'u_000001',
       },
     }),
-    post: jest.fn((url: string, data: { code?: string; phone?: string }) => {
-      if (url === AUTH_SMS_PATH) {
-        return Promise.resolve({
-          data: {
-            code: '246810',
-            phone: data.phone,
-          },
-        });
-      }
+    post: jest.fn(
+      (
+        url: string,
+        data: {
+          code?: string;
+          login_type?: AuthLoginType;
+          password?: string;
+          phone?: string;
+        },
+      ) => {
+        if (url === AUTH_SMS_PATH) {
+          return Promise.resolve({
+            data: {
+              code: '246810',
+              phone: data.phone,
+            },
+          });
+        }
 
-      if (url === AUTH_LOGIN_PATH) {
-        return Promise.resolve({
-          data: {
-            token: 'jwt-token-for-auth-playground',
-            user_id: 'u_000001',
-          },
-        });
-      }
+        if (url === AUTH_LOGIN_PATH) {
+          return Promise.resolve({
+            data: {
+              token: 'jwt-token-for-auth-playground',
+              user_id: 'u_000001',
+            },
+          });
+        }
 
-      return Promise.reject(new Error(`Unexpected auth path: ${url}`));
-    }),
+        return Promise.reject(new Error(`Unexpected auth path: ${url}`));
+      },
+    ),
   };
 }
 
@@ -134,6 +143,7 @@ test('auth playground sends sms, fills code, logs in, fetches profile, and logs 
 
   expect(client.post).toHaveBeenNthCalledWith(2, AUTH_LOGIN_PATH, {
     code: '246810',
+    login_type: AuthLoginType.Sms,
     phone: '13800000001',
   });
   expect(client.get).toHaveBeenCalledWith(AUTH_PROFILE_PATH, {
@@ -158,6 +168,50 @@ test('auth playground sends sms, fills code, logs in, fetches profile, and logs 
   expect(JSON.stringify(renderer?.toJSON())).toContain(
     '已退出登录，Token 已清除。',
   );
+});
+
+test('auth playground can log in with the built-in password account', async () => {
+  const client = createSuccessfulClient();
+  mockAuthHttpClient(client);
+  let renderer: ReactTestRenderer.ReactTestRenderer | undefined;
+
+  await ReactTestRenderer.act(async () => {
+    renderer = ReactTestRenderer.create(<AuthPlayground onBack={jest.fn()} />);
+  });
+
+  const passwordTab = renderer?.root.findByProps({
+    accessibilityLabel: '切换到密码登录',
+  });
+
+  await ReactTestRenderer.act(async () => {
+    passwordTab?.props.onPress();
+  });
+
+  expect(JSON.stringify(renderer?.toJSON())).toContain('手机号密码登录');
+  expect(JSON.stringify(renderer?.toJSON())).toContain(
+    '内置测试账号：13800000001 / im123456。',
+  );
+
+  const loginButton = renderer?.root.findByProps({
+    accessibilityLabel: '登录用户认证',
+  });
+
+  await ReactTestRenderer.act(async () => {
+    await loginButton?.props.onPress();
+  });
+
+  expect(client.post).toHaveBeenCalledWith(AUTH_LOGIN_PATH, {
+    login_type: AuthLoginType.Password,
+    password: 'im123456',
+    phone: '13800000001',
+  });
+  expect(client.get).toHaveBeenCalledWith(AUTH_PROFILE_PATH, {
+    headers: {
+      Authorization: 'Bearer jwt-token-for-auth-playground',
+    },
+  });
+  expect(getAuthToken()).toBe('jwt-token-for-auth-playground');
+  expect(JSON.stringify(renderer?.toJSON())).toContain('已登录');
 });
 
 test('auth playground validates phone before sending sms', async () => {
@@ -209,6 +263,95 @@ test('auth playground validates code before logging in', async () => {
   expect(client.post).not.toHaveBeenCalled();
   expect(client.get).not.toHaveBeenCalled();
   expect(JSON.stringify(renderer?.toJSON())).toContain('请输入验证码。');
+});
+
+test('auth playground validates password before password login', async () => {
+  const client = createSuccessfulClient();
+  mockAuthHttpClient(client);
+  let renderer: ReactTestRenderer.ReactTestRenderer | undefined;
+
+  await ReactTestRenderer.act(async () => {
+    renderer = ReactTestRenderer.create(<AuthPlayground onBack={jest.fn()} />);
+  });
+
+  const passwordTab = renderer?.root.findByProps({
+    accessibilityLabel: '切换到密码登录',
+  });
+  await ReactTestRenderer.act(async () => {
+    passwordTab?.props.onPress();
+  });
+
+  const passwordInput = renderer?.root.findByProps({
+    accessibilityLabel: '登录密码输入',
+  });
+  await ReactTestRenderer.act(async () => {
+    passwordInput?.props.onChangeText('   ');
+  });
+
+  const loginButton = renderer?.root.findByProps({
+    accessibilityLabel: '登录用户认证',
+  });
+  await ReactTestRenderer.act(async () => {
+    await loginButton?.props.onPress();
+  });
+
+  expect(client.post).not.toHaveBeenCalled();
+  expect(client.get).not.toHaveBeenCalled();
+  expect(JSON.stringify(renderer?.toJSON())).toContain('请输入密码。');
+});
+
+test('auth playground surfaces password login errors and keeps token empty', async () => {
+  const client: FakeAuthClient = {
+    get: jest.fn(),
+    post: jest.fn((url: string, data: { login_type?: AuthLoginType }) => {
+      if (
+        url === AUTH_LOGIN_PATH &&
+        data.login_type === AuthLoginType.Password
+      ) {
+        return Promise.reject(new Error('invalid phone or password'));
+      }
+
+      return Promise.reject(new Error(`Unexpected auth path: ${url}`));
+    }),
+  };
+  mockAuthHttpClient(client);
+  let renderer: ReactTestRenderer.ReactTestRenderer | undefined;
+
+  await ReactTestRenderer.act(async () => {
+    renderer = ReactTestRenderer.create(<AuthPlayground onBack={jest.fn()} />);
+  });
+
+  const passwordTab = renderer?.root.findByProps({
+    accessibilityLabel: '切换到密码登录',
+  });
+  await ReactTestRenderer.act(async () => {
+    passwordTab?.props.onPress();
+  });
+
+  const passwordInput = renderer?.root.findByProps({
+    accessibilityLabel: '登录密码输入',
+  });
+  await ReactTestRenderer.act(async () => {
+    passwordInput?.props.onChangeText('wrong-password');
+  });
+
+  const loginButton = renderer?.root.findByProps({
+    accessibilityLabel: '登录用户认证',
+  });
+  await ReactTestRenderer.act(async () => {
+    await loginButton?.props.onPress();
+  });
+
+  expect(client.post).toHaveBeenCalledWith(AUTH_LOGIN_PATH, {
+    login_type: AuthLoginType.Password,
+    password: 'wrong-password',
+    phone: '13800000001',
+  });
+  expect(client.get).not.toHaveBeenCalled();
+  expect(getAuthToken()).toBeUndefined();
+  expect(JSON.stringify(renderer?.toJSON())).toContain(
+    'invalid phone or password',
+  );
 });
 
 test('auth playground surfaces sms request errors', async () => {

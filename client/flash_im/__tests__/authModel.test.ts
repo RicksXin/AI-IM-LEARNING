@@ -3,16 +3,31 @@
  */
 
 import {
+  AuthLoginType,
   AuthSession,
   AuthSmsResult,
   AuthUserProfile,
   clearAuthToken,
   getAuthToken,
+  readAuthLoginType,
   saveAuthToken,
 } from '../src/playground/auth';
 
 afterEach(() => {
   clearAuthToken();
+});
+
+test('auth login type enum maps supported login modes', () => {
+  expect(AuthLoginType.Sms).toBe('sms');
+  expect(AuthLoginType.Password).toBe('password');
+  expect(readAuthLoginType('sms')).toBe(AuthLoginType.Sms);
+  expect(readAuthLoginType('password')).toBe(AuthLoginType.Password);
+});
+
+test('auth login type rejects unsupported values', () => {
+  expect(() => readAuthLoginType('magic')).toThrow(
+    'Auth login type must be sms or password.',
+  );
 });
 
 test('auth sms result maps backend response fields', () => {

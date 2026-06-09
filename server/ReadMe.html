@@ -1,0 +1,838 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>LearningAI IM Server 运行解读</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --bg: #f5f7fb;
+        --panel: #ffffff;
+        --ink: #172033;
+        --muted: #667085;
+        --line: #d8e0ec;
+        --soft: #eef3f8;
+        --brand: #16794c;
+        --brand-weak: #e5f5ed;
+        --warn: #b54708;
+        --warn-weak: #fff3dc;
+        --code: #101828;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        background: var(--bg);
+        color: var(--ink);
+        font-family:
+          Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+          "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+        line-height: 1.7;
+        margin: 0;
+      }
+
+      a {
+        color: var(--brand);
+        text-decoration: none;
+      }
+
+      a:hover {
+        text-decoration: underline;
+      }
+
+      code,
+      pre {
+        font-family:
+          "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+      }
+
+      .layout {
+        display: grid;
+        grid-template-columns: 260px minmax(0, 1fr);
+        min-height: 100vh;
+      }
+
+      .sidebar {
+        background: #ffffff;
+        border-right: 1px solid var(--line);
+        height: 100vh;
+        overflow: auto;
+        padding: 26px 20px;
+        position: sticky;
+        top: 0;
+      }
+
+      .sidebar-title {
+        color: var(--ink);
+        font-size: 17px;
+        font-weight: 900;
+        letter-spacing: 0;
+        margin: 0 0 14px;
+      }
+
+      .sidebar-subtitle {
+        color: var(--muted);
+        font-size: 13px;
+        margin: 0 0 22px;
+      }
+
+      .nav {
+        display: grid;
+        gap: 8px;
+      }
+
+      .nav a {
+        border-radius: 8px;
+        color: #344054;
+        display: block;
+        font-size: 14px;
+        font-weight: 700;
+        padding: 9px 10px;
+      }
+
+      .nav a:hover {
+        background: var(--soft);
+        text-decoration: none;
+      }
+
+      main {
+        margin: 0 auto;
+        max-width: 1120px;
+        padding: 38px 34px 70px;
+        width: 100%;
+      }
+
+      .hero {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 28px;
+      }
+
+      .eyebrow {
+        color: var(--brand);
+        font-size: 13px;
+        font-weight: 900;
+        letter-spacing: 0;
+        margin: 0 0 8px;
+        text-transform: uppercase;
+      }
+
+      h1 {
+        color: var(--ink);
+        font-size: 34px;
+        line-height: 1.18;
+        margin: 0;
+      }
+
+      .lead {
+        color: var(--muted);
+        font-size: 17px;
+        margin: 14px 0 0;
+        max-width: 820px;
+      }
+
+      section {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        margin-top: 18px;
+        padding: 24px;
+      }
+
+      h2 {
+        color: var(--ink);
+        font-size: 24px;
+        line-height: 1.25;
+        margin: 0 0 14px;
+      }
+
+      h3 {
+        color: #243048;
+        font-size: 18px;
+        margin: 22px 0 8px;
+      }
+
+      p {
+        margin: 10px 0;
+      }
+
+      ul,
+      ol {
+        margin: 10px 0 0;
+        padding-left: 22px;
+      }
+
+      li {
+        margin: 7px 0;
+      }
+
+      .grid {
+        display: grid;
+        gap: 14px;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .card {
+        background: #fbfcfe;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 16px;
+      }
+
+      .card h3 {
+        margin-top: 0;
+      }
+
+      .note {
+        background: var(--brand-weak);
+        border: 1px solid #b8e2ca;
+        border-radius: 8px;
+        color: #14532d;
+        margin-top: 14px;
+        padding: 14px 16px;
+      }
+
+      .warning {
+        background: var(--warn-weak);
+        border: 1px solid #ffd08a;
+        border-radius: 8px;
+        color: var(--warn);
+        margin-top: 14px;
+        padding: 14px 16px;
+      }
+
+      .flow {
+        display: grid;
+        gap: 10px;
+        margin-top: 14px;
+      }
+
+      .flow-row {
+        align-items: stretch;
+        display: grid;
+        gap: 10px;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+      }
+
+      .flow-box {
+        background: #f8fafc;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        min-height: 82px;
+        padding: 12px;
+      }
+
+      .flow-box strong {
+        color: var(--ink);
+        display: block;
+        font-size: 14px;
+        margin-bottom: 4px;
+      }
+
+      .flow-box span {
+        color: var(--muted);
+        display: block;
+        font-size: 13px;
+        line-height: 1.45;
+      }
+
+      .table-wrap {
+        overflow-x: auto;
+      }
+
+      table {
+        border-collapse: collapse;
+        margin-top: 12px;
+        min-width: 760px;
+        width: 100%;
+      }
+
+      th,
+      td {
+        border-bottom: 1px solid var(--line);
+        padding: 12px 10px;
+        text-align: left;
+        vertical-align: top;
+      }
+
+      th {
+        background: #f8fafc;
+        color: #344054;
+        font-size: 13px;
+        text-transform: uppercase;
+      }
+
+      td {
+        color: #344054;
+      }
+
+      .tag {
+        background: #eef3f8;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        color: #344054;
+        display: inline-block;
+        font-size: 12px;
+        font-weight: 800;
+        padding: 3px 8px;
+      }
+
+      pre {
+        background: var(--code);
+        border-radius: 8px;
+        color: #f8fafc;
+        line-height: 1.55;
+        margin: 14px 0 0;
+        overflow: auto;
+        padding: 16px;
+      }
+
+      code {
+        background: #eef3f8;
+        border-radius: 5px;
+        color: #101828;
+        padding: 2px 5px;
+      }
+
+      pre code {
+        background: transparent;
+        color: inherit;
+        padding: 0;
+      }
+
+      .file-list {
+        display: grid;
+        gap: 10px;
+      }
+
+      .file-item {
+        border-bottom: 1px solid var(--line);
+        padding-bottom: 10px;
+      }
+
+      .file-item:last-child {
+        border-bottom: 0;
+        padding-bottom: 0;
+      }
+
+      .file-item strong {
+        color: var(--ink);
+      }
+
+      .file-item span {
+        color: var(--muted);
+        display: block;
+        margin-top: 2px;
+      }
+
+      @media (max-width: 920px) {
+        .layout {
+          display: block;
+        }
+
+        .sidebar {
+          height: auto;
+          position: static;
+        }
+
+        main {
+          padding: 24px 16px 46px;
+        }
+
+        .grid,
+        .flow-row {
+          grid-template-columns: 1fr;
+        }
+
+        h1 {
+          font-size: 28px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="layout">
+      <aside class="sidebar">
+        <p class="sidebar-title">Server ReadMe</p>
+        <p class="sidebar-subtitle">LearningAI IM 后端运行说明</p>
+        <nav class="nav" aria-label="页面目录">
+          <a href="#overview">系统概览</a>
+          <a href="#startup">启动流程</a>
+          <a href="#files">文件职责</a>
+          <a href="#routes">路由与接口</a>
+          <a href="#auth">认证系统</a>
+          <a href="#websocket">WebSocket</a>
+          <a href="#state">内存状态</a>
+          <a href="#network">本地网络</a>
+          <a href="#tests">测试与验证</a>
+          <a href="#limits">当前边界</a>
+        </nav>
+      </aside>
+
+      <main>
+        <header class="hero" id="overview">
+          <p class="eyebrow">LearningAI IM Backend</p>
+          <h1>服务端系统是如何运作的</h1>
+          <p class="lead">
+            这个 server 是一个 Go + Gin 的 playground 服务端，负责给前端练习会话列表、短信/密码登录、JWT
+            个人资料请求、普通 WebSocket、认证聊天室 WebSocket 等基础能力。它故意保持轻量：没有数据库，核心状态都保存在内存里，适合学习和联调。
+          </p>
+        </header>
+
+        <section id="startup">
+          <h2>启动流程</h2>
+          <p>
+            服务端入口在 <code>main.go</code>。启动时先读取配置，再创建 Gin 路由，打印本机可访问地址，最后监听端口。
+          </p>
+          <div class="flow">
+            <div class="flow-row">
+              <div class="flow-box">
+                <strong>1. loadServerConfig</strong>
+                <span>从环境变量读取 <code>HOST</code> 和 <code>PORT</code>，默认是 <code>0.0.0.0:8080</code>。</span>
+              </div>
+              <div class="flow-box">
+                <strong>2. setupRouter</strong>
+                <span>创建 Gin Engine，挂载日志和恢复中间件，然后注册 HTTP 与 WebSocket 路由。</span>
+              </div>
+              <div class="flow-box">
+                <strong>3. printAccessURLs</strong>
+                <span>打印 localhost 和本机局域网 IPv4 地址，方便 iOS、Android、浏览器联调。</span>
+              </div>
+              <div class="flow-box">
+                <strong>4. router.Run</strong>
+                <span>开始监听请求，服务端进入持续运行状态。</span>
+              </div>
+            </div>
+          </div>
+          <pre><code>cd server
+go run .
+
+# 指定端口
+PORT=8090 go run .
+
+# 指定绑定地址
+HOST=127.0.0.1 PORT=8080 go run .</code></pre>
+        </section>
+
+        <section id="files">
+          <h2>文件职责</h2>
+          <div class="file-list">
+            <div class="file-item">
+              <strong>main.go</strong>
+              <span>程序入口，只负责加载配置、创建路由、打印访问地址和启动服务。</span>
+            </div>
+            <div class="file-item">
+              <strong>config.go</strong>
+              <span>读取环境变量并生成监听地址，当前支持 <code>HOST</code> 与 <code>PORT</code>。</span>
+            </div>
+            <div class="file-item">
+              <strong>router.go</strong>
+              <span>集中注册所有路由，是理解服务端能力清单的第一入口。</span>
+            </div>
+            <div class="file-item">
+              <strong>version.go</strong>
+              <span>实现 <code>GET /v</code>，返回服务名称和版本号。</span>
+            </div>
+            <div class="file-item">
+              <strong>conversation.go</strong>
+              <span>实现 <code>GET /conversation</code>，返回模拟会话列表。</span>
+            </div>
+            <div class="file-item">
+              <strong>auth.go</strong>
+              <span>实现短信验证码、密码登录、JWT 生成/解析、用户资料查询和内存用户仓库。</span>
+            </div>
+            <div class="file-item">
+              <strong>ws.go</strong>
+              <span>实现简单 WebSocket 练习接口 <code>/ws</code>，连接后欢迎，收到文本后 echo。</span>
+            </div>
+            <div class="file-item">
+              <strong>chat_room.go</strong>
+              <span>实现认证聊天室 <code>/chat_room</code>，客户端先用 JWT 鉴权，之后可以 ping/pong 和广播聊天消息。</span>
+            </div>
+            <div class="file-item">
+              <strong>network.go</strong>
+              <span>扫描本机网卡并打印可访问 URL，解决模拟器和真机联调时不知道 IP 的问题。</span>
+            </div>
+            <div class="file-item">
+              <strong>main_test.go</strong>
+              <span>覆盖版本、会话、认证、普通 WebSocket、认证聊天室等核心流程。</span>
+            </div>
+          </div>
+        </section>
+
+        <section id="routes">
+          <h2>路由与接口</h2>
+          <p>
+            所有路由都在 <code>router.go</code> 中注册。HTTP 路由直接返回 JSON；WebSocket 路由会先把 HTTP 请求升级为长连接。
+          </p>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>方法</th>
+                  <th>路径</th>
+                  <th>处理函数</th>
+                  <th>用途</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><span class="tag">GET</span></td>
+                  <td><code>/v</code></td>
+                  <td><code>handleVersion</code></td>
+                  <td>返回服务名和版本号，用于确认服务是否启动。</td>
+                </tr>
+                <tr>
+                  <td><span class="tag">GET</span></td>
+                  <td><code>/conversation</code></td>
+                  <td><code>handleConversations</code></td>
+                  <td>返回模拟会话列表，供前端 conversation playground 展示。</td>
+                </tr>
+                <tr>
+                  <td><span class="tag">POST</span></td>
+                  <td><code>/auth/sms</code></td>
+                  <td><code>handleSendSMS</code></td>
+                  <td>生成六位验证码并保存到内存。</td>
+                </tr>
+                <tr>
+                  <td><span class="tag">POST</span></td>
+                  <td><code>/auth/login</code></td>
+                  <td><code>handleLogin</code></td>
+                  <td>支持短信登录和密码登录，登录成功后返回 JWT token 和 user_id。</td>
+                </tr>
+                <tr>
+                  <td><span class="tag">GET</span></td>
+                  <td><code>/user/profile</code></td>
+                  <td><code>handleUserProfile</code></td>
+                  <td>从请求头 token 解析 user_id，返回用户资料。</td>
+                </tr>
+                <tr>
+                  <td><span class="tag">GET</span></td>
+                  <td><code>/ws</code></td>
+                  <td><code>handleWebSocket</code></td>
+                  <td>普通 WebSocket 练习接口，连接欢迎，消息 echo。</td>
+                </tr>
+                <tr>
+                  <td><span class="tag">GET</span></td>
+                  <td><code>/chat_room</code></td>
+                  <td><code>handleChatRoomWebSocket</code></td>
+                  <td>带 JWT 鉴权的聊天室 WebSocket。</td>
+                </tr>
+                <tr>
+                  <td><span class="tag">GET</span></td>
+                  <td><code>/chat_room/status</code></td>
+                  <td><code>chatRoomEndpointStatus</code></td>
+                  <td>返回聊天室端点状态，方便快速确认接口存在。</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section id="auth">
+          <h2>认证系统</h2>
+          <p>
+            认证逻辑集中在 <code>auth.go</code>。目前支持两种登录方式：短信验证码登录和密码登录。两种登录方式最终都会得到同一种登录结果：
+            <code>token</code> 和 <code>user_id</code>。
+          </p>
+
+          <h3>短信验证码登录</h3>
+          <ol>
+            <li>客户端调用 <code>POST /auth/sms</code>，传入手机号。</li>
+            <li>服务端生成六位随机验证码，保存到 <code>authStore.smsCodes</code>。</li>
+            <li>客户端调用 <code>POST /auth/login</code>，传入 <code>login_type: "sms"</code>、手机号和验证码。</li>
+            <li>服务端校验验证码。通过后，如果手机号不存在，就自动注册用户。</li>
+            <li>服务端生成 JWT，并把 token 返回给客户端。</li>
+          </ol>
+
+          <h3>密码登录</h3>
+          <p>
+            密码登录用于 playground 快速体验。服务端启动时会内置几个内存账号：
+          </p>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>手机号</th>
+                  <th>密码</th>
+                  <th>昵称</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><code>13800000001</code></td>
+                  <td><code>im123456</code></td>
+                  <td>Alice</td>
+                </tr>
+                <tr>
+                  <td><code>13800000002</code></td>
+                  <td><code>chat123456</code></td>
+                  <td>Bob</td>
+                </tr>
+                <tr>
+                  <td><code>13800000003</code></td>
+                  <td><code>demo123456</code></td>
+                  <td>Demo User</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <pre><code>{
+  "phone": "13800000001",
+  "password": "im123456",
+  "login_type": "password"
+}</code></pre>
+
+          <h3>JWT 的作用</h3>
+          <p>
+            JWT 是“登录成功后的身份凭证”。服务端在 <code>generateJWTForUser</code> 中把
+            <code>user_id</code>、签发时间、过期时间、签发方写入 claims，然后用 HS256 和服务端密钥签名。
+            客户端后续请求 <code>/user/profile</code> 或连接认证聊天室时，需要携带这个 token。
+          </p>
+          <div class="flow">
+            <div class="flow-row">
+              <div class="flow-box">
+                <strong>登录成功</strong>
+                <span>服务端确认手机号和验证码/密码正确。</span>
+              </div>
+              <div class="flow-box">
+                <strong>生成 token</strong>
+                <span>JWT claims 里写入 <code>user_id</code> 和过期时间。</span>
+              </div>
+              <div class="flow-box">
+                <strong>客户端保存</strong>
+                <span>前端保存 token，后续请求自动携带。</span>
+              </div>
+              <div class="flow-box">
+                <strong>服务端解析</strong>
+                <span>服务端验签并取出 <code>user_id</code>，再查询内存用户。</span>
+              </div>
+            </div>
+          </div>
+          <div class="warning">
+            当前 JWT 密钥、密码和用户数据都写在代码里，只适合 playground。正式项目需要把密钥放到环境变量或密钥管理系统，密码必须使用 bcrypt/argon2 等算法加盐哈希。
+          </div>
+        </section>
+
+        <section id="websocket">
+          <h2>WebSocket 系统</h2>
+          <div class="grid">
+            <div class="card">
+              <h3><code>/ws</code> 普通练习端点</h3>
+              <p>
+                这是最小 WebSocket 示例。连接建立后服务端发送欢迎消息
+                <code>welcome to websocket playground</code>。客户端发送文本后，服务端回复
+                <code>echo: 原始消息</code>。
+              </p>
+              <p>
+                它不要求登录，适合验证“浏览器或 RN 能不能成功建立 WebSocket 连接”。
+              </p>
+            </div>
+            <div class="card">
+              <h3><code>/chat_room</code> 认证聊天室</h3>
+              <p>
+                这是更接近 IM 产品的端点。连接建立后，服务端不会立刻允许聊天，而是先要求客户端发送 JWT 认证消息。
+                认证通过后，连接会加入聊天室 hub。
+              </p>
+              <p>
+                任意客户端发送 <code>chat</code> 消息后，服务端会广播给当前所有已认证连接。
+              </p>
+            </div>
+          </div>
+
+          <h3>认证聊天室通信流程</h3>
+          <div class="flow">
+            <div class="flow-row">
+              <div class="flow-box">
+                <strong>1. 建立连接</strong>
+                <span>客户端连接 <code>ws://host:port/chat_room</code>。</span>
+              </div>
+              <div class="flow-box">
+                <strong>2. 要求认证</strong>
+                <span>服务端返回 <code>auth_required</code>。</span>
+              </div>
+              <div class="flow-box">
+                <strong>3. 发送 token</strong>
+                <span>客户端发送 <code>{"type":"auth","token":"JWT"}</code>。</span>
+              </div>
+              <div class="flow-box">
+                <strong>4. 加入聊天室</strong>
+                <span>服务端解析 token，成功后 register 到 hub。</span>
+              </div>
+            </div>
+            <div class="flow-row">
+              <div class="flow-box">
+                <strong>5. 心跳</strong>
+                <span>客户端发送 <code>ping</code>，服务端回复 <code>pong</code>。</span>
+              </div>
+              <div class="flow-box">
+                <strong>6. 发消息</strong>
+                <span>客户端发送 <code>{"type":"chat","content":"你好"}</code>。</span>
+              </div>
+              <div class="flow-box">
+                <strong>7. 广播</strong>
+                <span>hub 遍历已认证连接，把消息发给所有客户端。</span>
+              </div>
+              <div class="flow-box">
+                <strong>8. 断开清理</strong>
+                <span>连接关闭或写入失败时，从 hub 中移除客户端。</span>
+              </div>
+            </div>
+          </div>
+
+          <pre><code>// 客户端认证消息
+{
+  "type": "auth",
+  "token": "jwt-token"
+}
+
+// 客户端聊天消息
+{
+  "type": "chat",
+  "content": "hello"
+}
+
+// 服务端广播消息
+{
+  "type": "chat",
+  "user_id": "u_000001",
+  "nickname": "Alice",
+  "content": "hello",
+  "time": "15:04:05"
+}</code></pre>
+        </section>
+
+        <section id="state">
+          <h2>内存状态与并发保护</h2>
+          <p>
+            当前服务端没有数据库，所有状态都存放在进程内存里。服务重启后，验证码、自动注册用户、WebSocket 连接都会消失。
+          </p>
+          <div class="grid">
+            <div class="card">
+              <h3><code>authMemoryStore</code></h3>
+              <ul>
+                <li><code>smsCodes</code>：手机号到验证码的映射。</li>
+                <li><code>usersByID</code>：user_id 到用户信息的映射。</li>
+                <li><code>usersByPhone</code>：手机号到用户信息的映射。</li>
+                <li><code>passwordsByPhone</code>：手机号到明文密码的 playground 映射。</li>
+                <li><code>mu</code>：读写锁，避免并发请求同时读写 map 出错。</li>
+              </ul>
+            </div>
+            <div class="card">
+              <h3><code>chatRoomHub</code></h3>
+              <ul>
+                <li><code>clients</code>：当前已认证 WebSocket 客户端集合。</li>
+                <li><code>register</code>：认证成功后加入集合。</li>
+                <li><code>unregister</code>：断开连接或广播失败后移除。</li>
+                <li><code>broadcast</code>：复制连接列表后逐个发送，避免长时间持有 hub 锁。</li>
+                <li><code>chatRoomClient.mu</code>：保护单个 WebSocket 连接写入，避免并发写。</li>
+              </ul>
+            </div>
+          </div>
+          <div class="note">
+            Go 的 map 不是并发安全的，所以 auth 和 chat_room 都用锁保护共享状态。这个点是服务端稳定性的基础，不是形式上的代码装饰。
+          </div>
+        </section>
+
+        <section id="network">
+          <h2>本地网络与模拟器访问</h2>
+          <p>
+            <code>HOST</code> 默认是 <code>0.0.0.0</code>，表示监听本机所有网卡；<code>PORT</code> 默认是
+            <code>8080</code>。服务启动后，<code>network.go</code> 会打印 localhost 和局域网 IP 对应的访问地址。
+          </p>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>环境</th>
+                  <th>推荐访问地址</th>
+                  <th>说明</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Mac 本机浏览器</td>
+                  <td><code>http://127.0.0.1:8080</code></td>
+                  <td>浏览器和服务端在同一台机器上。</td>
+                </tr>
+                <tr>
+                  <td>iOS 模拟器</td>
+                  <td><code>http://127.0.0.1:8080</code></td>
+                  <td>iOS 模拟器通常可以直接访问 Mac 的 localhost。</td>
+                </tr>
+                <tr>
+                  <td>Android 模拟器</td>
+                  <td><code>http://10.0.2.2:8080</code></td>
+                  <td>Android 模拟器中的 localhost 指模拟器自己，访问宿主机要用 <code>10.0.2.2</code>。</td>
+                </tr>
+                <tr>
+                  <td>真机</td>
+                  <td><code>http://局域网IP:8080</code></td>
+                  <td>手机和电脑需要在同一网络，使用服务启动时打印的局域网地址。</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section id="tests">
+          <h2>测试与验证</h2>
+          <p>
+            服务端测试集中在 <code>main_test.go</code>，使用 <code>httptest</code> 验证 HTTP 接口，用
+            <code>gorilla/websocket</code> 验证 WebSocket 行为。
+          </p>
+          <pre><code>cd server
+go test ./...</code></pre>
+          <h3>测试覆盖的关键行为</h3>
+          <ul>
+            <li><code>/v</code> 返回正确服务名和版本。</li>
+            <li><code>/conversation</code> 返回 20 条模拟会话。</li>
+            <li><code>/ws</code> 连接后欢迎，收到文本后 echo。</li>
+            <li>短信登录可以生成验证码、登录、获取 profile。</li>
+            <li>密码登录可以使用内置账号登录并获取 profile。</li>
+            <li>无效验证码、无效密码、缺失 token、无效 token 会被拒绝。</li>
+            <li><code>/chat_room</code> 必须先认证，认证后支持 ping/pong 和消息广播。</li>
+          </ul>
+        </section>
+
+        <section id="limits">
+          <h2>当前边界与后续演进</h2>
+          <p>
+            这个服务端是学习阶段的 playground，优点是简单、可读、容易联调；限制是很多能力还不是生产级。
+          </p>
+          <div class="grid">
+            <div class="card">
+              <h3>当前边界</h3>
+              <ul>
+                <li>没有数据库，重启后内存状态丢失。</li>
+                <li>JWT 密钥硬编码在代码里。</li>
+                <li>密码是明文内置账号，只能用于练习。</li>
+                <li>WebSocket origin 目前全部放行。</li>
+                <li>聊天室消息不落库，没有历史消息和消息序列号。</li>
+                <li>没有连接限流、设备管理、刷新 token、离线推送。</li>
+              </ul>
+            </div>
+            <div class="card">
+              <h3>生产化方向</h3>
+              <ul>
+                <li>引入数据库保存用户、会话、消息、成员关系。</li>
+                <li>密码加盐哈希，JWT 密钥走环境变量或密钥管理。</li>
+                <li>拆分 <code>cmd/server</code> 与 <code>internal/auth</code>、<code>internal/chatroom</code> 等包。</li>
+                <li>WebSocket 增加网关层、心跳超时、重连恢复和消息 ACK。</li>
+                <li>消息由服务端生成 ID、序列号和时间，保证多端一致。</li>
+                <li>增加结构化日志、指标监控、错误追踪和压测。</li>
+              </ul>
+            </div>
+          </div>
+          <div class="note">
+            学习时先理解“HTTP 登录拿 token，WebSocket 连接后用 token 认证，认证成功再进入实时通信”这条主线。后续所有 IM 复杂能力，基本都是围绕这条主线继续扩展。
+          </div>
+        </section>
+      </main>
+    </div>
+  </body>
+</html>

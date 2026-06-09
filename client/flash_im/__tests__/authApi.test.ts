@@ -7,16 +7,14 @@ import {
   AUTH_PROFILE_PATH,
   AUTH_SMS_PATH,
   AuthApi,
+  AuthLoginType,
   AuthSession,
   AuthSmsResult,
   AuthUserProfile,
   createAuthBaseURL,
   createAuthHttpClient,
 } from '../src/playground/auth';
-import type {
-  AuthHttpClient,
-  AuthTokenStore,
-} from '../src/playground/auth';
+import type { AuthHttpClient, AuthTokenStore } from '../src/playground/auth';
 
 function createTokenStore(): AuthTokenStore {
   let token: string | undefined;
@@ -139,6 +137,7 @@ test('auth api saves login token and carries it when fetching profile', async ()
 
   expect(client.post).toHaveBeenCalledWith(AUTH_LOGIN_PATH, {
     code: '123456',
+    login_type: AuthLoginType.Sms,
     phone: '13800000001',
   });
   expect(client.get).toHaveBeenCalledWith(AUTH_PROFILE_PATH, {
@@ -146,6 +145,56 @@ test('auth api saves login token and carries it when fetching profile', async ()
       Authorization: 'Bearer jwt-token',
     },
   });
+});
+
+test('auth api supports password login with the login type enum', async () => {
+  const tokenStore = createTokenStore();
+  const client: AuthHttpClient = {
+    get: jest.fn(),
+    post: jest.fn().mockResolvedValue({
+      data: {
+        token: 'password-jwt-token',
+        user_id: 'user-1',
+      },
+    }),
+  };
+  const api = new AuthApi({ client, tokenStore });
+
+  await expect(
+    api.loginWithPassword('13800000001', 'im123456'),
+  ).resolves.toEqual(
+    new AuthSession({
+      token: 'password-jwt-token',
+      userId: 'user-1',
+    }),
+  );
+
+  expect(client.post).toHaveBeenCalledWith(AUTH_LOGIN_PATH, {
+    login_type: AuthLoginType.Password,
+    password: 'im123456',
+    phone: '13800000001',
+  });
+  expect(tokenStore.getToken()).toBe('password-jwt-token');
+});
+
+test('auth api does not save a token when password login fails', async () => {
+  const tokenStore = createTokenStore();
+  const client: AuthHttpClient = {
+    get: jest.fn(),
+    post: jest.fn().mockRejectedValue(new Error('invalid phone or password')),
+  };
+  const api = new AuthApi({ client, tokenStore });
+
+  await expect(
+    api.loginWithPassword('13800000001', 'wrong-password'),
+  ).rejects.toThrow('invalid phone or password');
+
+  expect(client.post).toHaveBeenCalledWith(AUTH_LOGIN_PATH, {
+    login_type: AuthLoginType.Password,
+    password: 'wrong-password',
+    phone: '13800000001',
+  });
+  expect(tokenStore.getToken()).toBeUndefined();
 });
 
 test('auth api logout clears the saved token', async () => {

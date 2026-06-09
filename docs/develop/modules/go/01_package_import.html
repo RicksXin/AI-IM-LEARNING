@@ -1,0 +1,439 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Go 代码拆分：package 与 import</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f5f7fb;
+      --paper: #ffffff;
+      --ink: #172033;
+      --muted: #647085;
+      --line: #dbe4ef;
+      --soft: #eef4fa;
+      --accent: #176b87;
+      --accent-soft: #e6f4f7;
+      --code-bg: #101827;
+      --code-ink: #e8eef8;
+      --shadow: 0 18px 48px rgba(23, 32, 51, 0.08);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif;
+      line-height: 1.78;
+    }
+
+    code,
+    pre {
+      font-family: "Cascadia Code", "JetBrains Mono", Consolas, monospace;
+    }
+
+    code {
+      padding: 0.12em 0.35em;
+      border-radius: 4px;
+      background: #edf2f7;
+      color: #26384d;
+      font-size: 0.92em;
+    }
+
+    pre {
+      margin: 14px 0 22px;
+      padding: 18px;
+      overflow-x: auto;
+      border-radius: 8px;
+      background: var(--code-bg);
+      color: var(--code-ink);
+      line-height: 1.58;
+    }
+
+    pre code {
+      padding: 0;
+      background: transparent;
+      color: inherit;
+      font-size: 0.94em;
+    }
+
+    .page {
+      max-width: 1080px;
+      margin: 0 auto;
+      padding: 40px 24px 72px;
+    }
+
+    .doc {
+      overflow: hidden;
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      box-shadow: var(--shadow);
+    }
+
+    header {
+      padding: 52px 56px 36px;
+      border-bottom: 1px solid var(--line);
+      background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+    }
+
+    main {
+      padding: 0 56px 56px;
+    }
+
+    .kicker {
+      margin: 0 0 10px;
+      color: var(--accent);
+      font-size: 14px;
+      font-weight: 900;
+      letter-spacing: 0;
+      text-transform: uppercase;
+    }
+
+    h1,
+    h2 {
+      line-height: 1.25;
+      letter-spacing: 0;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(34px, 5vw, 54px);
+      font-weight: 900;
+    }
+
+    h2 {
+      margin: 42px 0 14px;
+      padding-top: 8px;
+      border-top: 1px solid var(--line);
+      font-size: 26px;
+    }
+
+    p {
+      margin: 10px 0;
+    }
+
+    ul {
+      margin: 10px 0 18px;
+      padding-left: 1.2rem;
+    }
+
+    li {
+      margin: 6px 0;
+    }
+
+    blockquote {
+      margin: 18px 0;
+      padding: 14px 18px;
+      border-left: 4px solid var(--accent);
+      border-radius: 8px;
+      background: var(--accent-soft);
+      color: #1f4050;
+      font-weight: 700;
+    }
+
+    .lead {
+      max-width: 860px;
+      margin-top: 20px;
+      color: var(--muted);
+      font-size: 18px;
+    }
+
+    .summary {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+      margin: 30px 0 6px;
+    }
+
+    .summary-card {
+      min-height: 112px;
+      padding: 18px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: var(--soft);
+    }
+
+    .summary-card strong {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 18px;
+    }
+
+    .summary-card span {
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .compare {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: 16px;
+      margin: 18px 0 24px;
+    }
+
+    .panel {
+      padding: 18px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: #fbfdff;
+    }
+
+    .panel h3 {
+      margin: 0 0 10px;
+      font-size: 18px;
+    }
+
+    @media (max-width: 760px) {
+      header,
+      main {
+        padding-left: 22px;
+        padding-right: 22px;
+      }
+
+      .summary,
+      .compare {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <article class="doc">
+      <header>
+        <p class="kicker">Go Modules</p>
+        <h1>Go 代码拆分：package 与 import</h1>
+        <p class="lead">
+          这篇文档介绍当前 server 项目最适合的 Go 拆分方式：先在同一个 <code>package main</code> 下拆文件，
+          等领域稳定后，再考虑拆目录和独立 package。
+        </p>
+        <div class="summary">
+          <div class="summary-card">
+            <strong>package</strong>
+            <span>同目录下相同 package 的多个 .go 文件属于同一个包。</span>
+          </div>
+          <div class="summary-card">
+            <strong>import</strong>
+            <span>只有使用其他包时才需要 import，同包文件之间不需要。</span>
+          </div>
+          <div class="summary-card">
+            <strong>可见性</strong>
+            <span>Go 通过首字母大小写决定符号是否能被其他包使用。</span>
+          </div>
+        </div>
+      </header>
+
+      <main>
+        <section>
+          <h2>1. 当前项目里最常用的拆分方式</h2>
+          <p>Go 的代码组织有一个很重要的特点：</p>
+          <blockquote>同一个目录下的多个 <code>.go</code> 文件，只要 <code>package</code> 名相同，就属于同一个包。</blockquote>
+          <p>比如当前后端项目：</p>
+          <pre><code>server/
+├── main.go
+├── auth.go
+├── ws.go
+├── chat_room.go
+└── main_test.go</code></pre>
+          <p>这些文件开头都是：</p>
+          <pre><code>package main</code></pre>
+          <p>所以它们虽然写在不同文件里，但在 Go 看来都属于同一个包。</p>
+          <pre><code>main.go 里可以直接使用 auth.go 里的 handleLogin
+main.go 里可以直接使用 ws.go 里的 handleWebSocket
+main.go 里可以直接使用 chat_room.go 里的 handleChatRoomWebSocket</code></pre>
+          <p>不需要写：</p>
+          <pre><code>import "./auth"</code></pre>
+          <p>也不需要写：</p>
+          <pre><code>auth.handleLogin</code></pre>
+          <p>因为它们本来就在同一个 <code>package main</code> 里。</p>
+        </section>
+
+        <section>
+          <h2>2. 同包拆文件：最适合当前 playground 阶段</h2>
+          <p>当前项目最适合先使用“同包拆文件”：</p>
+          <pre><code>server/
+├── main.go              启动入口
+├── router.go            路由注册
+├── config.go            配置读取
+├── network.go           本机 IP 和访问地址打印
+├── version.go           /v 接口
+├── conversation.go      /conversation 接口
+├── auth.go              JWT 认证
+├── ws.go                WebSocket 心跳练习
+└── chat_room.go         认证聊天室</code></pre>
+          <p>这些文件都继续使用：</p>
+          <pre><code>package main</code></pre>
+          <p>好处是调用简单：</p>
+          <pre><code>func setupRouter() *gin.Engine {
+    router := gin.New()
+
+    router.GET("/v", handleVersion)
+    router.GET("/conversation", handleConversations)
+    router.POST("/auth/login", handleLogin)
+    router.GET("/chat_room", handleChatRoomWebSocket)
+
+    return router
+}</code></pre>
+          <p>即使 <code>handleVersion</code>、<code>handleLogin</code>、<code>handleChatRoomWebSocket</code> 分别在不同文件里，也可以直接调用。</p>
+          <blockquote>这就是 Go 里最基础、最轻量的拆分手段：拆文件，不拆 package。</blockquote>
+        </section>
+
+        <section>
+          <h2>3. import 是什么时候用的</h2>
+          <p><code>import</code> 用来引入“其他包”。比如当前 <code>main.go</code> 里有：</p>
+          <pre><code>import (
+    "log"
+    "net"
+    "net/http"
+    "os"
+    "sort"
+
+    "github.com/gin-gonic/gin"
+)</code></pre>
+          <div class="compare">
+            <div class="panel">
+              <h3>标准库</h3>
+              <ul>
+                <li><code>log</code></li>
+                <li><code>net</code></li>
+                <li><code>net/http</code></li>
+                <li><code>os</code></li>
+                <li><code>sort</code></li>
+              </ul>
+            </div>
+            <div class="panel">
+              <h3>第三方库</h3>
+              <ul>
+                <li><code>github.com/gin-gonic/gin</code></li>
+              </ul>
+            </div>
+          </div>
+          <p>导入后，使用方式通常是：</p>
+          <pre><code>log.Printf("server started")
+net.JoinHostPort(host, port)
+http.StatusOK
+gin.New()</code></pre>
+          <p>也就是：</p>
+          <pre><code>包名.符号名</code></pre>
+        </section>
+
+        <section>
+          <h2>4. 自己创建子包时怎么 import</h2>
+          <p>如果未来项目继续变大，可以把代码拆成多个目录，每个目录就是一个包。</p>
+          <pre><code>server/
+├── go.mod
+├── main.go
+└── internal/
+    ├── config/
+    │   └── config.go
+    └── chatroom/
+        └── hub.go</code></pre>
+          <p><code>go.mod</code> 里当前模块名是：</p>
+          <pre><code>module learningai/server</code></pre>
+          <p>那么如果要在 <code>main.go</code> 里引入自己的子包，路径应该从模块名开始：</p>
+          <pre><code>import (
+    "learningai/server/internal/config"
+    "learningai/server/internal/chatroom"
+)</code></pre>
+          <p>使用时：</p>
+          <pre><code>cfg := config.Load()
+hub := chatroom.NewHub()</code></pre>
+          <div class="compare">
+            <div class="panel">
+              <h3>同包拆文件</h3>
+              <p>直接用函数名。</p>
+              <pre><code>setupRouter()
+handleLogin()</code></pre>
+            </div>
+            <div class="panel">
+              <h3>跨包拆目录</h3>
+              <p><code>import</code> 后用 <code>包名.函数名</code>。</p>
+              <pre><code>config.Load()
+chatroom.NewHub()</code></pre>
+            </div>
+          </div>
+        </section>
+
+        <section>
+          <h2>5. 大小写决定是否能被其他包使用</h2>
+          <p>Go 里没有 <code>public</code>、<code>private</code> 关键字，而是靠首字母大小写控制可见性。</p>
+          <p>小写开头：只在当前包内可见。</p>
+          <pre><code>func setupRouter() *gin.Engine {
+    // ...
+}</code></pre>
+          <p>大写开头：可以被其他包 import 后使用。</p>
+          <pre><code>func NewHub() *Hub {
+    // ...
+}</code></pre>
+          <p>如果当前只是同一个 <code>package main</code> 下拆文件，可以继续使用小写函数名：</p>
+          <pre><code>handleLogin
+handleUserProfile
+handleChatRoomWebSocket</code></pre>
+          <p>如果未来把聊天室拆成独立包，例如 <code>internal/chatroom</code>，那么需要对外暴露的构造函数通常要改成大写：</p>
+          <pre><code>chatroom.NewHub()</code></pre>
+        </section>
+
+        <section>
+          <h2>6. 当前项目推荐的拆分策略</h2>
+          <p>现在后端还处在 playground 阶段，不建议一上来就拆很多 package。</p>
+          <p>更稳妥的顺序是：</p>
+          <pre><code>第一步：同一个 package main 下拆文件
+第二步：等某个领域稳定后，再考虑拆目录和 package</code></pre>
+          <p>比如现在可以先这样拆：</p>
+          <pre><code>main.go
+├── 只保留 main 启动流程
+
+router.go
+├── setupRouter
+
+config.go
+├── ServerConfig
+├── loadServerConfig
+├── getEnv
+
+network.go
+├── printAccessURLs
+├── localIPv4s
+├── ipFromAddr
+
+conversation.go
+├── ConversationResponse
+├── fakeConversations
+├── handleConversations
+
+version.go
+├── appName
+├── appVersion
+├── VersionResponse
+├── handleVersion</code></pre>
+          <p>这些文件仍然全部写：</p>
+          <pre><code>package main</code></pre>
+          <p>这样 <code>main.go</code> 会变薄，但测试和调用方式都不需要大改。</p>
+        </section>
+
+        <section>
+          <h2>7. 一个简单判断标准</h2>
+          <pre><code>只是为了让文件更清楚：
+    拆文件，保留同一个 package。
+
+已经形成独立领域，并且希望被多个地方复用：
+    拆目录，创建新 package。
+
+需要对外暴露能力：
+    使用大写开头的符号。
+
+只在包内部使用：
+    使用小写开头的符号。</code></pre>
+          <blockquote>对当前项目来说，下一步最推荐的是：先拆文件，不急着拆 package。</blockquote>
+        </section>
+      </main>
+    </article>
+  </div>
+</body>
+</html>
