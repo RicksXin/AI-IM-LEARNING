@@ -130,7 +130,10 @@ func TestChatRoomWebSocketAuthenticatesThenHandlesPingAndChat(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	resetAuthStoreForTest()
 
-	user := authStore.findOrCreateUserByPhone("13800000001")
+	user, err := authStore.findOrCreateUserByPhone("13800000001")
+	if err != nil {
+		t.Fatalf("create auth user: %v", err)
+	}
 	token, err := generateJWTForUser(user.UserID)
 	if err != nil {
 		t.Fatalf("generate jwt: %v", err)
@@ -216,8 +219,14 @@ func TestChatRoomWebSocketBroadcastsChatToAuthenticatedClients(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	resetAuthStoreForTest()
 
-	sender := authStore.findOrCreateUserByPhone("13800000001")
-	receiver := authStore.findOrCreateUserByPhone("13800000002")
+	sender, err := authStore.findOrCreateUserByPhone("13800000001")
+	if err != nil {
+		t.Fatalf("create sender auth user: %v", err)
+	}
+	receiver, err := authStore.findOrCreateUserByPhone("13800000002")
+	if err != nil {
+		t.Fatalf("create receiver auth user: %v", err)
+	}
 	senderToken, err := generateJWTForUser(sender.UserID)
 	if err != nil {
 		t.Fatalf("generate sender jwt: %v", err)

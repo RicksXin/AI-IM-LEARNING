@@ -56,12 +56,26 @@ type authUser struct {
 	Phone    string
 }
 
+type authPasswordSeed struct {
+	Phone    string
+	Password string
+	Nickname string
+}
+
 type LoginType string
 
 const (
 	LoginTypeSMS      LoginType = "sms"
 	LoginTypePassword LoginType = "password"
 )
+
+type authStoreBackend interface {
+	saveSMSCode(phone string, code string) error
+	verifySMSCode(phone string, code string) (bool, error)
+	findOrCreateUserByPhone(phone string) (authUser, error)
+	authenticatePassword(phone string, password string) (authUser, bool, error)
+	findUserByID(userID string) (authUser, bool, error)
+}
 
 type authClaims struct {
 	UserID string `json:"user_id"`
@@ -77,6 +91,12 @@ type authMemoryStore struct {
 	passwordsByPhone map[string]string
 }
 
+var defaultPasswordUsers = []authPasswordSeed{
+	{Phone: "13800000001", Password: "im123456", Nickname: "Alice"},
+	{Phone: "13800000002", Password: "chat123456", Nickname: "Bob"},
+	{Phone: "13800000003", Password: "demo123456", Nickname: "Demo User"},
+}
+
 func newAuthMemoryStore() *authMemoryStore {
 	store := &authMemoryStore{
 		nextUserID:       1,
@@ -85,14 +105,14 @@ func newAuthMemoryStore() *authMemoryStore {
 		usersByPhone:     map[string]authUser{},
 		passwordsByPhone: map[string]string{},
 	}
-	store.seedPasswordUser("13800000001", "im123456", "Alice")
-	store.seedPasswordUser("13800000002", "chat123456", "Bob")
-	store.seedPasswordUser("13800000003", "demo123456", "Demo User")
+	for _, seed := range defaultPasswordUsers {
+		store.seedPasswordUser(seed.Phone, seed.Password, seed.Nickname)
+	}
 
 	return store
 }
 
-var authStore = newAuthMemoryStore()
+var authStore authStoreBackend = newAuthMemoryStore()
 
 func handleSendSMS(c *gin.Context) {
 	var request SMSRequest
@@ -113,7 +133,11 @@ func handleSendSMS(c *gin.Context) {
 		return
 	}
 
-	authStore.saveSMSCode(phone, code)
+	if err := authStore.saveSMSCode(phone, code); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to save sms code"})
+		return
+	}
+
 	c.JSON(http.StatusOK, SMSResponse{
 		Code:  code,
 		Phone: phone,
@@ -146,6 +170,9 @@ func handleLogin(c *gin.Context) {
 		if errors.Is(err, errInvalidLoginRequest) {
 			status = http.StatusBadRequest
 			message = strings.TrimPrefix(message, errInvalidLoginRequest.Error()+": ")
+		} else if errors.Is(err, errAuthStoreFailure) {
+			status = http.StatusInternalServerError
+			message = "auth storage failed"
 		}
 		c.JSON(status, gin.H{"error": message})
 		return
@@ -163,7 +190,10 @@ func handleLogin(c *gin.Context) {
 	})
 }
 
-var errInvalidLoginRequest = errors.New("invalid login request")
+var (
+	errInvalidLoginRequest = errors.New("invalid login request")
+	errAuthStoreFailure    = errors.New("auth store failure")
+)
 
 func authenticateLogin(request LoginRequest, phone string, loginType LoginType) (authUser, error) {
 	switch loginType {
@@ -173,18 +203,31 @@ func authenticateLogin(request LoginRequest, phone string, loginType LoginType) 
 			return authUser{}, fmt.Errorf("%w: phone and code are required", errInvalidLoginRequest)
 		}
 
-		if !authStore.verifySMSCode(phone, code) {
+		ok, err := authStore.verifySMSCode(phone, code)
+		if err != nil {
+			return authUser{}, fmt.Errorf("%w: verify sms code: %v", errAuthStoreFailure, err)
+		}
+
+		if !ok {
 			return authUser{}, errors.New("invalid phone or code")
 		}
 
-		return authStore.findOrCreateUserByPhone(phone), nil
+		user, err := authStore.findOrCreateUserByPhone(phone)
+		if err != nil {
+			return authUser{}, fmt.Errorf("%w: find or create user: %v", errAuthStoreFailure, err)
+		}
+
+		return user, nil
 	case LoginTypePassword:
 		password := strings.TrimSpace(request.Password)
 		if password == "" {
 			return authUser{}, fmt.Errorf("%w: phone and password are required", errInvalidLoginRequest)
 		}
 
-		user, ok := authStore.authenticatePassword(phone, password)
+		user, ok, err := authStore.authenticatePassword(phone, password)
+		if err != nil {
+			return authUser{}, fmt.Errorf("%w: verify password: %v", errAuthStoreFailure, err)
+		}
 		if !ok {
 			return authUser{}, errors.New("invalid phone or password")
 		}
@@ -219,7 +262,11 @@ func handleUserProfile(c *gin.Context) {
 		return
 	}
 
-	user, ok := authStore.findUserByID(userID)
+	user, ok, err := authStore.findUserByID(userID)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid token"})
+		return
+	}
 	if !ok {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid token"})
 		return
@@ -233,26 +280,27 @@ func handleUserProfile(c *gin.Context) {
 	})
 }
 
-func (store *authMemoryStore) saveSMSCode(phone string, code string) {
+func (store *authMemoryStore) saveSMSCode(phone string, code string) error {
 	store.mu.Lock()
 	defer store.mu.Unlock()
 
 	store.smsCodes[phone] = code
+	return nil
 }
 
-func (store *authMemoryStore) verifySMSCode(phone string, code string) bool {
+func (store *authMemoryStore) verifySMSCode(phone string, code string) (bool, error) {
 	store.mu.RLock()
 	defer store.mu.RUnlock()
 
-	return store.smsCodes[phone] == code
+	return store.smsCodes[phone] == code, nil
 }
 
-func (store *authMemoryStore) findOrCreateUserByPhone(phone string) authUser {
+func (store *authMemoryStore) findOrCreateUserByPhone(phone string) (authUser, error) {
 	store.mu.Lock()
 	defer store.mu.Unlock()
 
 	if user, ok := store.usersByPhone[phone]; ok {
-		return user
+		return user, nil
 	}
 
 	userID := fmt.Sprintf("u_%06d", store.nextUserID)
@@ -266,27 +314,27 @@ func (store *authMemoryStore) findOrCreateUserByPhone(phone string) authUser {
 	store.usersByID[user.UserID] = user
 	store.usersByPhone[phone] = user
 
-	return user
+	return user, nil
 }
 
-func (store *authMemoryStore) authenticatePassword(phone string, password string) (authUser, bool) {
+func (store *authMemoryStore) authenticatePassword(phone string, password string) (authUser, bool, error) {
 	store.mu.RLock()
 	defer store.mu.RUnlock()
 
 	if store.passwordsByPhone[phone] != password {
-		return authUser{}, false
+		return authUser{}, false, nil
 	}
 
 	user, ok := store.usersByPhone[phone]
-	return user, ok
+	return user, ok, nil
 }
 
-func (store *authMemoryStore) findUserByID(userID string) (authUser, bool) {
+func (store *authMemoryStore) findUserByID(userID string) (authUser, bool, error) {
 	store.mu.RLock()
 	defer store.mu.RUnlock()
 
 	user, ok := store.usersByID[userID]
-	return user, ok
+	return user, ok, nil
 }
 
 func (store *authMemoryStore) seedPasswordUser(phone string, password string, nickname string) {

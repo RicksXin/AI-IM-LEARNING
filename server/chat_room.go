@@ -236,7 +236,12 @@ func authenticateChatRoomConnection(conn *websocket.Conn) (authUser, bool) {
 		return authUser{}, false
 	}
 
-	user, ok := authStore.findUserByID(userID)
+	user, ok, err := authStore.findUserByID(userID)
+	if err != nil {
+		log.Printf("chat_room find user failed: %v", err)
+		_ = writeChatRoomAuthFailed(conn, "invalid token")
+		return authUser{}, false
+	}
 	if !ok {
 		_ = writeChatRoomAuthFailed(conn, "invalid token")
 		return authUser{}, false

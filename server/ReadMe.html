@@ -365,6 +365,7 @@
           <a href="#files">文件职责</a>
           <a href="#routes">路由与接口</a>
           <a href="#auth">认证系统</a>
+          <a href="#mysql">MySQL 持久化</a>
           <a href="#websocket">WebSocket</a>
           <a href="#state">内存状态</a>
           <a href="#network">本地网络</a>
@@ -379,7 +380,7 @@
           <h1>服务端系统是如何运作的</h1>
           <p class="lead">
             这个 server 是一个 Go + Gin 的 playground 服务端，负责给前端练习会话列表、短信/密码登录、JWT
-            个人资料请求、普通 WebSocket、认证聊天室 WebSocket 等基础能力。它故意保持轻量：没有数据库，核心状态都保存在内存里，适合学习和联调。
+            个人资料请求、普通 WebSocket、认证聊天室 WebSocket 等基础能力。认证用户数据默认可以先走内存；配置 MySQL 后，会自动建表并把用户、登录身份、验证码持久化。
           </p>
         </header>
 
@@ -392,7 +393,7 @@
             <div class="flow-row">
               <div class="flow-box">
                 <strong>1. loadServerConfig</strong>
-                <span>从环境变量读取 <code>HOST</code> 和 <code>PORT</code>，默认是 <code>0.0.0.0:8080</code>。</span>
+                <span>从环境变量读取 <code>HOST</code>、<code>PORT</code> 和 MySQL 配置，默认监听 <code>0.0.0.0:8080</code>。</span>
               </div>
               <div class="flow-box">
                 <strong>2. setupRouter</strong>
@@ -415,7 +416,10 @@ go run .
 PORT=8090 go run .
 
 # 指定绑定地址
-HOST=127.0.0.1 PORT=8080 go run .</code></pre>
+HOST=127.0.0.1 PORT=8080 go run .
+
+# 启用 MySQL 持久化
+DB_HOST=127.0.0.1 DB_PORT=3306 DB_USER=root DB_PASSWORD=your_password DB_NAME=flash_im go run .</code></pre>
         </section>
 
         <section id="files">
@@ -427,7 +431,11 @@ HOST=127.0.0.1 PORT=8080 go run .</code></pre>
             </div>
             <div class="file-item">
               <strong>config.go</strong>
-              <span>读取环境变量并生成监听地址，当前支持 <code>HOST</code> 与 <code>PORT</code>。</span>
+              <span>读取环境变量并生成监听地址和 MySQL DSN，支持 <code>HOST</code>、<code>PORT</code>、<code>DB_*</code> / <code>MYSQL_*</code>。</span>
+            </div>
+            <div class="file-item">
+              <strong>auth_mysql_store.go</strong>
+              <span>实现 MySQL 认证仓库、自动建库建表、默认密码账号种子数据和 bcrypt 密码校验。</span>
             </div>
             <div class="file-item">
               <strong>router.go</strong>
@@ -614,7 +622,73 @@ HOST=127.0.0.1 PORT=8080 go run .</code></pre>
             </div>
           </div>
           <div class="warning">
-            当前 JWT 密钥、密码和用户数据都写在代码里，只适合 playground。正式项目需要把密钥放到环境变量或密钥管理系统，密码必须使用 bcrypt/argon2 等算法加盐哈希。
+            当前 JWT 密钥仍然写在代码里，只适合 playground。MySQL 模式下密码会用 bcrypt 哈希保存；正式项目还需要把 JWT 密钥放到环境变量或密钥管理系统，并增加刷新 token、设备会话和审计日志。
+          </div>
+        </section>
+
+        <section id="mysql">
+          <h2>MySQL 持久化</h2>
+          <p>
+            服务端现在支持两种认证存储模式：未配置数据库时使用 <code>authMemoryStore</code>，适合快速测试；配置 MySQL 后使用 <code>mysqlAuthStore</code>，服务启动时会自动创建数据库和表，并写入默认密码登录账号。
+          </p>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>配置项</th>
+                  <th>示例</th>
+                  <th>说明</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><code>DB_NAME</code> / <code>MYSQL_DATABASE</code></td>
+                  <td><code>flash_im</code></td>
+                  <td>设置后启用 MySQL 模式。服务会尝试 <code>CREATE DATABASE IF NOT EXISTS</code>。</td>
+                </tr>
+                <tr>
+                  <td><code>DB_HOST</code> / <code>MYSQL_HOST</code></td>
+                  <td><code>127.0.0.1</code></td>
+                  <td>MySQL 主机地址，Docker 本地端口映射时通常是 <code>127.0.0.1</code>。</td>
+                </tr>
+                <tr>
+                  <td><code>DB_PORT</code> / <code>MYSQL_PORT</code></td>
+                  <td><code>3306</code></td>
+                  <td>MySQL 端口。</td>
+                </tr>
+                <tr>
+                  <td><code>DB_USER</code> / <code>MYSQL_USER</code></td>
+                  <td><code>root</code></td>
+                  <td>数据库用户名。</td>
+                </tr>
+                <tr>
+                  <td><code>DB_PASSWORD</code> / <code>MYSQL_PASSWORD</code></td>
+                  <td><code>your_password</code></td>
+                  <td>数据库密码。</td>
+                </tr>
+                <tr>
+                  <td><code>DB_DSN</code> / <code>MYSQL_DSN</code></td>
+                  <td><code>root:pwd@tcp(127.0.0.1:3306)/flash_im?parseTime=true</code></td>
+                  <td>完整 DSN。提供 DSN 时优先使用它，不再自动创建数据库。</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <pre><code>cd server
+DB_HOST=127.0.0.1 \
+DB_PORT=3306 \
+DB_USER=root \
+DB_PASSWORD=your_password \
+DB_NAME=flash_im \
+go run .</code></pre>
+          <h3>自动创建的表</h3>
+          <ul>
+            <li><code>users</code>：用户基础资料，包含 <code>id</code>、<code>phone</code>、<code>nickname</code>、<code>avatar</code>。</li>
+            <li><code>auth_identities</code>：登录身份，支持 <code>sms</code> 和 <code>password</code>。密码登录保存 bcrypt 哈希。</li>
+            <li><code>sms_codes</code>：短信验证码，当前为了 playground 简单落在 MySQL；正式 IM 产品更常见放 Redis 并设置 TTL。</li>
+          </ul>
+          <div class="note">
+            默认密码账号仍然可用：<code>13800000001 / im123456</code>、<code>13800000002 / chat123456</code>、<code>13800000003 / demo123456</code>。MySQL 模式下这些密码会以 bcrypt 哈希写入数据库。
           </div>
         </section>
 
@@ -709,7 +783,7 @@ HOST=127.0.0.1 PORT=8080 go run .</code></pre>
         <section id="state">
           <h2>内存状态与并发保护</h2>
           <p>
-            当前服务端没有数据库，所有状态都存放在进程内存里。服务重启后，验证码、自动注册用户、WebSocket 连接都会消失。
+            未配置 MySQL 时，认证数据会存放在进程内存里，服务重启后验证码、自动注册用户都会丢失。配置 MySQL 后，用户、登录身份和验证码会落库；WebSocket 连接仍然只存在于当前进程内存中。
           </p>
           <div class="grid">
             <div class="card">
@@ -718,7 +792,7 @@ HOST=127.0.0.1 PORT=8080 go run .</code></pre>
                 <li><code>smsCodes</code>：手机号到验证码的映射。</li>
                 <li><code>usersByID</code>：user_id 到用户信息的映射。</li>
                 <li><code>usersByPhone</code>：手机号到用户信息的映射。</li>
-                <li><code>passwordsByPhone</code>：手机号到明文密码的 playground 映射。</li>
+                <li><code>passwordsByPhone</code>：未配置数据库时的 playground 密码映射。</li>
                 <li><code>mu</code>：读写锁，避免并发请求同时读写 map 出错。</li>
               </ul>
             </div>
@@ -734,7 +808,7 @@ HOST=127.0.0.1 PORT=8080 go run .</code></pre>
             </div>
           </div>
           <div class="note">
-            Go 的 map 不是并发安全的，所以 auth 和 chat_room 都用锁保护共享状态。这个点是服务端稳定性的基础，不是形式上的代码装饰。
+            Go 的 map 不是并发安全的，所以内存 auth store 和 chat_room 都用锁保护共享状态。MySQL 模式下，认证数据交给数据库保证持久化和约束；聊天室连接集合仍然由内存 hub 管理。
           </div>
         </section>
 
@@ -808,9 +882,9 @@ go test ./...</code></pre>
             <div class="card">
               <h3>当前边界</h3>
               <ul>
-                <li>没有数据库，重启后内存状态丢失。</li>
+                <li>MySQL 目前只覆盖认证相关数据，聊天室消息仍不落库。</li>
                 <li>JWT 密钥硬编码在代码里。</li>
-                <li>密码是明文内置账号，只能用于练习。</li>
+                <li>内存模式下默认账号仍是 playground 练习数据；MySQL 模式下密码已使用 bcrypt 哈希。</li>
                 <li>WebSocket origin 目前全部放行。</li>
                 <li>聊天室消息不落库，没有历史消息和消息序列号。</li>
                 <li>没有连接限流、设备管理、刷新 token、离线推送。</li>
