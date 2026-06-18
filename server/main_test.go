@@ -18,6 +18,45 @@ func resetAuthStoreForTest() {
 	defaultChatRoomHub = newChatRoomHub()
 }
 
+func loginBySMSForTest(t *testing.T, router *gin.Engine, phone string) LoginResponse {
+	t.Helper()
+
+	smsRecorder := httptest.NewRecorder()
+	smsRequest := httptest.NewRequest(
+		http.MethodPost,
+		"/auth/sms",
+		bytes.NewBufferString(`{"phone":"`+phone+`"}`),
+	)
+	smsRequest.Header.Set("Content-Type", "application/json")
+	router.ServeHTTP(smsRecorder, smsRequest)
+
+	if smsRecorder.Code != http.StatusOK {
+		t.Fatalf("POST /auth/sms status = %d, want %d; body = %s", smsRecorder.Code, http.StatusOK, smsRecorder.Body.String())
+	}
+
+	var smsResponse SMSResponse
+	if err := json.Unmarshal(smsRecorder.Body.Bytes(), &smsResponse); err != nil {
+		t.Fatalf("decode sms response: %v", err)
+	}
+
+	loginRecorder := httptest.NewRecorder()
+	loginBody := `{"phone":"` + phone + `","code":"` + smsResponse.Code + `","login_type":"sms"}`
+	loginRequest := httptest.NewRequest(http.MethodPost, "/auth/login", bytes.NewBufferString(loginBody))
+	loginRequest.Header.Set("Content-Type", "application/json")
+	router.ServeHTTP(loginRecorder, loginRequest)
+
+	if loginRecorder.Code != http.StatusOK {
+		t.Fatalf("POST /auth/login status = %d, want %d; body = %s", loginRecorder.Code, http.StatusOK, loginRecorder.Body.String())
+	}
+
+	var loginResponse LoginResponse
+	if err := json.Unmarshal(loginRecorder.Body.Bytes(), &loginResponse); err != nil {
+		t.Fatalf("decode login response: %v", err)
+	}
+
+	return loginResponse
+}
+
 func TestVersionEndpoint(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
@@ -451,6 +490,18 @@ func TestAuthSMSLoginAndProfileFlow(t *testing.T) {
 		t.Fatal("login response user_id is empty")
 	}
 
+	if loginResponse.AccountID != loginResponse.UserID {
+		t.Fatalf("login response account_id = %q, want %q", loginResponse.AccountID, loginResponse.UserID)
+	}
+
+	if loginResponse.HasPassword {
+		t.Fatal("sms login should report has_password=false")
+	}
+
+	if !loginResponse.ShouldSetPassword {
+		t.Fatal("sms login should report should_set_password=true")
+	}
+
 	if loginResponse.Token == "" {
 		t.Fatal("login response token is empty")
 	}
@@ -465,13 +516,13 @@ func TestAuthSMSLoginAndProfileFlow(t *testing.T) {
 	}
 
 	profileRecorder := httptest.NewRecorder()
-	profileRequest := httptest.NewRequest(http.MethodGet, "/user/profile", nil)
+	profileRequest := httptest.NewRequest(http.MethodGet, "/auth/profile", nil)
 	profileRequest.Header.Set("Authorization", "Bearer "+loginResponse.Token)
 
 	router.ServeHTTP(profileRecorder, profileRequest)
 
 	if profileRecorder.Code != http.StatusOK {
-		t.Fatalf("GET /user/profile status = %d, want %d", profileRecorder.Code, http.StatusOK)
+		t.Fatalf("GET /auth/profile status = %d, want %d", profileRecorder.Code, http.StatusOK)
 	}
 
 	var profile UserProfileResponse
@@ -519,6 +570,18 @@ func TestAuthPasswordLoginAndProfileFlow(t *testing.T) {
 
 	if loginResponse.UserID == "" {
 		t.Fatal("login response user_id is empty")
+	}
+
+	if loginResponse.AccountID != loginResponse.UserID {
+		t.Fatalf("login response account_id = %q, want %q", loginResponse.AccountID, loginResponse.UserID)
+	}
+
+	if !loginResponse.HasPassword {
+		t.Fatal("password login should report has_password=true")
+	}
+
+	if loginResponse.ShouldSetPassword {
+		t.Fatal("password login should report should_set_password=false")
 	}
 
 	if loginResponse.Token == "" {

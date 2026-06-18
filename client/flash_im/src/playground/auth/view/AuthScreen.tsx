@@ -2,9 +2,11 @@ import React from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AuthLoginType } from '../model/AuthLoginType';
+import type AuthSession from '../model/AuthSession';
 import type AuthUserProfile from '../model/AuthUserProfile';
 import AuthEndpointPanel from './AuthEndpointPanel';
 import AuthLoginView from './AuthLoginView';
+import AuthPasswordSetupView from './AuthPasswordSetupView';
 import AuthProfileView from './AuthProfileView';
 
 type AuthScreenProps = {
@@ -14,12 +16,17 @@ type AuthScreenProps = {
   errorMessage?: string;
   host: string;
   isLoggingIn: boolean;
+  isSettingPassword?: boolean;
   isSendingCode: boolean;
   loginType: AuthLoginType;
   password: string;
+  passwordSetupError?: string;
   phone: string;
   port: string;
   profile?: AuthUserProfile;
+  session?: AuthSession;
+  setupPassword?: string;
+  setupPasswordConfirm?: string;
   statusMessage?: string;
   tokenPreview?: string;
   onBack: () => void;
@@ -32,6 +39,9 @@ type AuthScreenProps = {
   onPhoneChange: (value: string) => void;
   onPortChange: (value: string) => void;
   onSendCode: () => void;
+  onSetupPassword?: () => void;
+  onSetupPasswordChange?: (value: string) => void;
+  onSetupPasswordConfirmChange?: (value: string) => void;
 };
 
 function AuthScreen({
@@ -41,12 +51,17 @@ function AuthScreen({
   errorMessage,
   host,
   isLoggingIn,
+  isSettingPassword = false,
   isSendingCode,
   loginType,
   password,
+  passwordSetupError,
   phone,
   port,
   profile,
+  session,
+  setupPassword = '',
+  setupPasswordConfirm = '',
   statusMessage,
   tokenPreview,
   onBack,
@@ -59,6 +74,9 @@ function AuthScreen({
   onPhoneChange,
   onPortChange,
   onSendCode,
+  onSetupPassword,
+  onSetupPasswordChange,
+  onSetupPasswordConfirmChange,
 }: AuthScreenProps) {
   return (
     <SafeAreaView style={styles.screen}>
@@ -100,12 +118,34 @@ function AuthScreen({
           onPortChange={onPortChange}
         />
 
+        {profile && statusMessage ? (
+          <Text accessibilityLabel="认证状态提示" style={styles.statusText}>
+            {statusMessage}
+          </Text>
+        ) : null}
+
         {profile ? (
-          <AuthProfileView
-            profile={profile}
-            tokenPreview={tokenPreview}
-            onLogout={onLogout}
-          />
+          <>
+            <AuthProfileView
+              hasPassword={session?.hasPassword}
+              profile={profile}
+              tokenPreview={tokenPreview}
+              onLogout={onLogout}
+            />
+            {session?.shouldSetPassword ? (
+              <AuthPasswordSetupView
+                confirmPassword={setupPasswordConfirm}
+                errorMessage={passwordSetupError}
+                isSaving={isSettingPassword}
+                password={setupPassword}
+                onConfirmPasswordChange={
+                  onSetupPasswordConfirmChange ?? (() => undefined)
+                }
+                onPasswordChange={onSetupPasswordChange ?? (() => undefined)}
+                onSubmit={onSetupPassword ?? (() => undefined)}
+              />
+            ) : null}
+          </>
         ) : (
           <AuthLoginView
             code={code}
@@ -198,6 +238,13 @@ const styles = StyleSheet.create({
   },
   pressed: {
     opacity: 0.72,
+  },
+  statusText: {
+    color: '#146c43',
+    fontSize: 13,
+    fontWeight: '700',
+    letterSpacing: 0,
+    marginTop: 14,
   },
 });
 

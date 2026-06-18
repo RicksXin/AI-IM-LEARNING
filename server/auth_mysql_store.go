@@ -107,33 +107,46 @@ func quoteMySQLIdentifier(value string) (string, error) {
 
 func (store *mysqlAuthStore) migrate() error {
 	statements := []string{
-		`CREATE TABLE IF NOT EXISTS users (
+		`CREATE TABLE IF NOT EXISTS accounts (
 			id VARCHAR(32) NOT NULL PRIMARY KEY,
-			phone VARCHAR(32) NOT NULL UNIQUE,
-			nickname VARCHAR(128) NOT NULL,
-			avatar VARCHAR(255) NOT NULL,
+			account_no VARCHAR(64) NOT NULL UNIQUE,
+			status VARCHAR(32) NOT NULL DEFAULT 'active',
 			created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 			updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 		) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
-		`CREATE TABLE IF NOT EXISTS auth_identities (
+		`CREATE TABLE IF NOT EXISTS user_profiles (
+			account_id VARCHAR(32) NOT NULL PRIMARY KEY,
+			nickname VARCHAR(128) NOT NULL,
+			avatar_url VARCHAR(255) NOT NULL,
+			signature VARCHAR(255) NOT NULL DEFAULT '',
+			updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+			CONSTRAINT fk_user_profile_account
+				FOREIGN KEY (account_id) REFERENCES accounts(id)
+				ON DELETE CASCADE
+		) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
+		`CREATE TABLE IF NOT EXISTS auth_credentials (
 			id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
-			user_id VARCHAR(32) NOT NULL,
-			login_type VARCHAR(32) NOT NULL,
+			account_id VARCHAR(32) NOT NULL,
+			credential_type VARCHAR(32) NOT NULL,
 			identifier VARCHAR(128) NOT NULL,
-			password_hash VARCHAR(255) NULL,
+			secret_hash VARCHAR(255) NULL,
 			created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 			updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-			UNIQUE KEY uniq_auth_identity (login_type, identifier),
-			KEY idx_auth_identity_user_id (user_id),
-			CONSTRAINT fk_auth_identity_user
-				FOREIGN KEY (user_id) REFERENCES users(id)
+			UNIQUE KEY uniq_auth_credential (credential_type, identifier),
+			KEY idx_auth_credential_account_id (account_id),
+			CONSTRAINT fk_auth_credential_account
+				FOREIGN KEY (account_id) REFERENCES accounts(id)
 				ON DELETE CASCADE
 		) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
 		`CREATE TABLE IF NOT EXISTS sms_codes (
-			phone VARCHAR(32) NOT NULL PRIMARY KEY,
+			id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+			phone VARCHAR(32) NOT NULL,
 			code VARCHAR(12) NOT NULL,
+			expires_at TIMESTAMP NOT NULL,
+			consumed_at TIMESTAMP NULL,
 			created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-			updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+			updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+			KEY idx_sms_codes_phone_expires_at (phone, expires_at)
 		) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
 	}
 
@@ -191,11 +204,11 @@ func (store *mysqlAuthStore) seedPasswordUser(userID string, seed authPasswordSe
 	}
 
 	_, err = store.db.Exec(
-		`INSERT INTO auth_identities (user_id, login_type, identifier, password_hash)
+		`INSERT INTO auth_credentials (account_id, credential_type, identifier, secret_hash)
 		 VALUES (?, ?, ?, ?)
-		 ON DUPLICATE KEY UPDATE user_id = VALUES(user_id), password_hash = VALUES(password_hash)`,
+		 ON DUPLICATE KEY UPDATE account_id = VALUES(account_id), secret_hash = VALUES(secret_hash)`,
 		user.UserID,
-		string(LoginTypePassword),
+		authCredentialTypePhone,
 		seed.Phone,
 		passwordHash,
 	)
@@ -205,9 +218,8 @@ func (store *mysqlAuthStore) seedPasswordUser(userID string, seed authPasswordSe
 
 func (store *mysqlAuthStore) saveSMSCode(phone string, code string) error {
 	_, err := store.db.Exec(
-		`INSERT INTO sms_codes (phone, code)
-		 VALUES (?, ?)
-		 ON DUPLICATE KEY UPDATE code = VALUES(code), updated_at = CURRENT_TIMESTAMP`,
+		`INSERT INTO sms_codes (phone, code, expires_at, consumed_at)
+		 VALUES (?, ?, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 5 MINUTE), NULL)`,
 		phone,
 		code,
 	)
@@ -215,11 +227,16 @@ func (store *mysqlAuthStore) saveSMSCode(phone string, code string) error {
 }
 
 func (store *mysqlAuthStore) verifySMSCode(phone string, code string) (bool, error) {
-	var savedCode string
+	var id int64
 	err := store.db.QueryRow(
-		`SELECT code FROM sms_codes WHERE phone = ?`,
+		`SELECT id
+		 FROM sms_codes
+		 WHERE phone = ? AND code = ? AND consumed_at IS NULL AND expires_at >= CURRENT_TIMESTAMP
+		 ORDER BY id DESC
+		 LIMIT 1`,
 		phone,
-	).Scan(&savedCode)
+		code,
+	).Scan(&id)
 	if errors.Is(err, sql.ErrNoRows) {
 		return false, nil
 	}
@@ -227,7 +244,15 @@ func (store *mysqlAuthStore) verifySMSCode(phone string, code string) (bool, err
 		return false, err
 	}
 
-	return savedCode == code, nil
+	_, err = store.db.Exec(
+		`UPDATE sms_codes SET consumed_at = CURRENT_TIMESTAMP WHERE id = ?`,
+		id,
+	)
+	if err != nil {
+		return false, err
+	}
+
+	return true, nil
 }
 
 func (store *mysqlAuthStore) findOrCreateUserByPhone(phone string) (authUser, error) {
@@ -266,18 +291,6 @@ func (store *mysqlAuthStore) findOrCreateUserByPhone(phone string) (authUser, er
 			return authUser{}, err
 		}
 
-		_, err = store.db.Exec(
-			`INSERT INTO auth_identities (user_id, login_type, identifier)
-			 VALUES (?, ?, ?)
-		 ON DUPLICATE KEY UPDATE user_id = VALUES(user_id)`,
-			user.UserID,
-			string(LoginTypeSMS),
-			phone,
-		)
-		if err != nil {
-			return authUser{}, err
-		}
-
 		return user, nil
 	}
 
@@ -286,14 +299,15 @@ func (store *mysqlAuthStore) findOrCreateUserByPhone(phone string) (authUser, er
 
 func (store *mysqlAuthStore) authenticatePassword(phone string, password string) (authUser, bool, error) {
 	var user authUser
-	var passwordHash string
+	var passwordHash sql.NullString
 	err := store.db.QueryRow(
-		`SELECT u.id, u.nickname, u.avatar, u.phone, ai.password_hash
-		 FROM users u
-		 JOIN auth_identities ai ON ai.user_id = u.id
-		 WHERE ai.login_type = ? AND ai.identifier = ?
+		`SELECT a.id, p.nickname, p.avatar_url, c.identifier, c.secret_hash
+		 FROM auth_credentials c
+		 JOIN accounts a ON a.id = c.account_id
+		 JOIN user_profiles p ON p.account_id = a.id
+		 WHERE c.credential_type = ? AND c.identifier = ?
 		 LIMIT 1`,
-		string(LoginTypePassword),
+		authCredentialTypePhone,
 		phone,
 	).Scan(&user.UserID, &user.Nickname, &user.Avatar, &user.Phone, &passwordHash)
 	if errors.Is(err, sql.ErrNoRows) {
@@ -303,7 +317,11 @@ func (store *mysqlAuthStore) authenticatePassword(phone string, password string)
 		return authUser{}, false, err
 	}
 
-	if err := bcrypt.CompareHashAndPassword([]byte(passwordHash), []byte(password)); err != nil {
+	if !passwordHash.Valid || passwordHash.String == "" {
+		return authUser{}, false, nil
+	}
+
+	if err := bcrypt.CompareHashAndPassword([]byte(passwordHash.String), []byte(password)); err != nil {
 		return authUser{}, false, nil
 	}
 
@@ -312,14 +330,24 @@ func (store *mysqlAuthStore) authenticatePassword(phone string, password string)
 
 func (store *mysqlAuthStore) findUserByID(userID string) (authUser, bool, error) {
 	return store.findUser(
-		`SELECT id, nickname, avatar, phone FROM users WHERE id = ? LIMIT 1`,
+		`SELECT a.id, p.nickname, p.avatar_url, COALESCE(c.identifier, '')
+		 FROM accounts a
+		 JOIN user_profiles p ON p.account_id = a.id
+		 LEFT JOIN auth_credentials c ON c.account_id = a.id AND c.credential_type = 'phone'
+		 WHERE a.id = ?
+		 LIMIT 1`,
 		userID,
 	)
 }
 
 func (store *mysqlAuthStore) findUserByPhone(phone string) (authUser, bool, error) {
 	return store.findUser(
-		`SELECT id, nickname, avatar, phone FROM users WHERE phone = ? LIMIT 1`,
+		`SELECT a.id, p.nickname, p.avatar_url, c.identifier
+		 FROM auth_credentials c
+		 JOIN accounts a ON a.id = c.account_id
+		 JOIN user_profiles p ON p.account_id = a.id
+		 WHERE c.credential_type = 'phone' AND c.identifier = ?
+		 LIMIT 1`,
 		phone,
 	)
 }
@@ -343,14 +371,139 @@ func (store *mysqlAuthStore) findUser(query string, args ...interface{}) (authUs
 }
 
 func (store *mysqlAuthStore) insertUser(user authUser) error {
-	_, err := store.db.Exec(
-		`INSERT INTO users (id, phone, nickname, avatar)
-		 VALUES (?, ?, ?, ?)`,
+	tx, err := store.db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	if _, err := tx.Exec(
+		`INSERT INTO accounts (id, account_no, status)
+		 VALUES (?, ?, 'active')`,
 		user.UserID,
-		user.Phone,
+		user.UserID,
+	); err != nil {
+		return err
+	}
+
+	if _, err := tx.Exec(
+		`INSERT INTO user_profiles (account_id, nickname, avatar_url)
+		 VALUES (?, ?, ?)`,
+		user.UserID,
 		user.Nickname,
 		user.Avatar,
+	); err != nil {
+		return err
+	}
+
+	if _, err := tx.Exec(
+		`INSERT INTO auth_credentials (account_id, credential_type, identifier)
+		 VALUES (?, ?, ?)`,
+		user.UserID,
+		authCredentialTypePhone,
+		user.Phone,
+	); err != nil {
+		return err
+	}
+
+	return tx.Commit()
+}
+
+func (store *mysqlAuthStore) hasPassword(userID string) (bool, error) {
+	var passwordHash sql.NullString
+	err := store.db.QueryRow(
+		`SELECT secret_hash
+		 FROM auth_credentials
+		 WHERE account_id = ? AND credential_type = ?
+		 LIMIT 1`,
+		userID,
+		authCredentialTypePhone,
+	).Scan(&passwordHash)
+	if errors.Is(err, sql.ErrNoRows) {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+
+	return passwordHash.Valid && passwordHash.String != "", nil
+}
+
+func (store *mysqlAuthStore) setInitialPassword(userID string, password string) error {
+	hasPassword, err := store.hasPassword(userID)
+	if err != nil {
+		return err
+	}
+	if hasPassword {
+		return errPasswordAlreadySet
+	}
+
+	passwordHash, err := hashPassword(password)
+	if err != nil {
+		return err
+	}
+
+	result, err := store.db.Exec(
+		`UPDATE auth_credentials
+		 SET secret_hash = ?
+		 WHERE account_id = ? AND credential_type = ? AND (secret_hash IS NULL OR secret_hash = '')`,
+		passwordHash,
+		userID,
+		authCredentialTypePhone,
 	)
+	if err != nil {
+		return err
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rowsAffected == 0 {
+		return errPasswordAlreadySet
+	}
+
+	return nil
+}
+
+func (store *mysqlAuthStore) changePassword(userID string, oldPassword string, newPassword string) error {
+	var passwordHash sql.NullString
+	err := store.db.QueryRow(
+		`SELECT secret_hash
+		 FROM auth_credentials
+		 WHERE account_id = ? AND credential_type = ?
+		 LIMIT 1`,
+		userID,
+		authCredentialTypePhone,
+	).Scan(&passwordHash)
+	if errors.Is(err, sql.ErrNoRows) {
+		return errPasswordMismatch
+	}
+	if err != nil {
+		return err
+	}
+	if !passwordHash.Valid || passwordHash.String == "" {
+		return errPasswordMismatch
+	}
+
+	if err := bcrypt.CompareHashAndPassword([]byte(passwordHash.String), []byte(oldPassword)); err != nil {
+		return errPasswordMismatch
+	}
+
+	nextHash, err := hashPassword(newPassword)
+	if err != nil {
+		return err
+	}
+
+	_, err = store.db.Exec(
+		`UPDATE auth_credentials
+		 SET secret_hash = ?
+		 WHERE account_id = ? AND credential_type = ?`,
+		nextHash,
+		userID,
+		authCredentialTypePhone,
+	)
+
 	return err
 }
 

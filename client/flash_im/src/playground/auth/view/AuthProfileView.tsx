@@ -3,12 +3,14 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import type AuthUserProfile from '../model/AuthUserProfile';
 
 type AuthProfileViewProps = {
+  hasPassword?: boolean;
   profile: AuthUserProfile;
   tokenPreview?: string;
   onLogout: () => void;
 };
 
 function AuthProfileView({
+  hasPassword,
   profile,
   tokenPreview,
   onLogout,
@@ -42,6 +44,12 @@ function AuthProfileView({
           <Text style={styles.infoLabel}>Token</Text>
           <Text numberOfLines={1} style={styles.infoValue}>
             {tokenPreview ?? '已保存'}
+          </Text>
+        </View>
+        <View style={styles.infoItem}>
+          <Text style={styles.infoLabel}>登录密码</Text>
+          <Text numberOfLines={1} style={styles.infoValue}>
+            {hasPassword ? '已设置登录密码' : '未设置登录密码'}
           </Text>
         </View>
       </View>

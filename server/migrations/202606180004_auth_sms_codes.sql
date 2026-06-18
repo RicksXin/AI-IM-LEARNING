@@ -1,0 +1,14 @@
+-- +goose Up
+CREATE TABLE IF NOT EXISTS sms_codes (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  phone VARCHAR(32) NOT NULL,
+  code VARCHAR(12) NOT NULL,
+  expires_at TIMESTAMP NOT NULL,
+  consumed_at TIMESTAMP NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  KEY idx_sms_codes_phone_expires_at (phone, expires_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- +goose Down
+DROP TABLE IF EXISTS sms_codes;

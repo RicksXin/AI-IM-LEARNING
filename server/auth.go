@@ -38,15 +38,28 @@ type LoginRequest struct {
 }
 
 type LoginResponse struct {
-	Token  string `json:"token"`
-	UserID string `json:"user_id"`
+	Token             string `json:"token"`
+	UserID            string `json:"user_id"`
+	AccountID         string `json:"account_id"`
+	HasPassword       bool   `json:"has_password"`
+	ShouldSetPassword bool   `json:"should_set_password"`
 }
 
 type UserProfileResponse struct {
-	UserID   string `json:"user_id"`
-	Nickname string `json:"nickname"`
-	Avatar   string `json:"avatar"`
-	Phone    string `json:"phone"`
+	UserID    string `json:"user_id"`
+	AccountID string `json:"account_id"`
+	Nickname  string `json:"nickname"`
+	Avatar    string `json:"avatar"`
+	Phone     string `json:"phone"`
+}
+
+type PasswordSetupRequest struct {
+	Password string `json:"password"`
+}
+
+type PasswordChangeRequest struct {
+	OldPassword string `json:"old_password"`
+	NewPassword string `json:"new_password"`
 }
 
 type authUser struct {
@@ -69,12 +82,17 @@ const (
 	LoginTypePassword LoginType = "password"
 )
 
+const authCredentialTypePhone = "phone"
+
 type authStoreBackend interface {
 	saveSMSCode(phone string, code string) error
 	verifySMSCode(phone string, code string) (bool, error)
 	findOrCreateUserByPhone(phone string) (authUser, error)
 	authenticatePassword(phone string, password string) (authUser, bool, error)
 	findUserByID(userID string) (authUser, bool, error)
+	hasPassword(userID string) (bool, error)
+	setInitialPassword(userID string, password string) error
+	changePassword(userID string, oldPassword string, newPassword string) error
 }
 
 type authClaims struct {
@@ -184,15 +202,26 @@ func handleLogin(c *gin.Context) {
 		return
 	}
 
+	hasPassword, err := authStore.hasPassword(user.UserID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "auth storage failed"})
+		return
+	}
+
 	c.JSON(http.StatusOK, LoginResponse{
-		Token:  token,
-		UserID: user.UserID,
+		Token:             token,
+		UserID:            user.UserID,
+		AccountID:         user.UserID,
+		HasPassword:       hasPassword,
+		ShouldSetPassword: !hasPassword,
 	})
 }
 
 var (
 	errInvalidLoginRequest = errors.New("invalid login request")
 	errAuthStoreFailure    = errors.New("auth store failure")
+	errPasswordAlreadySet  = errors.New("password already set")
+	errPasswordMismatch    = errors.New("password mismatch")
 )
 
 func authenticateLogin(request LoginRequest, phone string, loginType LoginType) (authUser, error) {
@@ -250,15 +279,8 @@ func normalizeLoginType(loginType LoginType) (LoginType, bool) {
 }
 
 func handleUserProfile(c *gin.Context) {
-	tokenText := extractTokenFromHeader(c.GetHeader("Authorization"), c.GetHeader("Token"))
-	if tokenText == "" {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "token is required"})
-		return
-	}
-
-	userID, err := parseUserIDFromJWT(tokenText)
-	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid token"})
+	userID, ok := requireAuthUserID(c)
+	if !ok {
 		return
 	}
 
@@ -273,11 +295,104 @@ func handleUserProfile(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, UserProfileResponse{
-		UserID:   user.UserID,
-		Nickname: user.Nickname,
-		Avatar:   user.Avatar,
-		Phone:    user.Phone,
+		UserID:    user.UserID,
+		AccountID: user.UserID,
+		Nickname:  user.Nickname,
+		Avatar:    user.Avatar,
+		Phone:     user.Phone,
 	})
+}
+
+func handlePasswordSetup(c *gin.Context) {
+	userID, ok := requireAuthUserID(c)
+	if !ok {
+		return
+	}
+
+	var request PasswordSetupRequest
+	if err := c.ShouldBindJSON(&request); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
+		return
+	}
+
+	password := strings.TrimSpace(request.Password)
+	if err := validateAuthPassword(password); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	if err := authStore.setInitialPassword(userID, password); err != nil {
+		if errors.Is(err, errPasswordAlreadySet) {
+			c.JSON(http.StatusConflict, gin.H{"error": "password already set"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "auth storage failed"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"ok": true})
+}
+
+func handlePasswordChange(c *gin.Context) {
+	userID, ok := requireAuthUserID(c)
+	if !ok {
+		return
+	}
+
+	var request PasswordChangeRequest
+	if err := c.ShouldBindJSON(&request); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
+		return
+	}
+
+	oldPassword := strings.TrimSpace(request.OldPassword)
+	newPassword := strings.TrimSpace(request.NewPassword)
+	if oldPassword == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "old_password is required"})
+		return
+	}
+	if err := validateAuthPassword(newPassword); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	if err := authStore.changePassword(userID, oldPassword, newPassword); err != nil {
+		if errors.Is(err, errPasswordMismatch) {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "old password is invalid"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "auth storage failed"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"ok": true})
+}
+
+func requireAuthUserID(c *gin.Context) (string, bool) {
+	tokenText := extractTokenFromHeader(c.GetHeader("Authorization"), c.GetHeader("Token"))
+	if tokenText == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "token is required"})
+		return "", false
+	}
+
+	userID, err := parseUserIDFromJWT(tokenText)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid token"})
+		return "", false
+	}
+
+	return userID, true
+}
+
+func validateAuthPassword(password string) error {
+	if password == "" {
+		return errors.New("password is required")
+	}
+	if len(password) < 6 {
+		return errors.New("password must be at least 6 characters")
+	}
+
+	return nil
 }
 
 func (store *authMemoryStore) saveSMSCode(phone string, code string) error {
@@ -335,6 +450,51 @@ func (store *authMemoryStore) findUserByID(userID string) (authUser, bool, error
 
 	user, ok := store.usersByID[userID]
 	return user, ok, nil
+}
+
+func (store *authMemoryStore) hasPassword(userID string) (bool, error) {
+	store.mu.RLock()
+	defer store.mu.RUnlock()
+
+	user, ok := store.usersByID[userID]
+	if !ok {
+		return false, nil
+	}
+
+	password := store.passwordsByPhone[user.Phone]
+	return password != "", nil
+}
+
+func (store *authMemoryStore) setInitialPassword(userID string, password string) error {
+	store.mu.Lock()
+	defer store.mu.Unlock()
+
+	user, ok := store.usersByID[userID]
+	if !ok {
+		return errors.New("user not found")
+	}
+	if store.passwordsByPhone[user.Phone] != "" {
+		return errPasswordAlreadySet
+	}
+
+	store.passwordsByPhone[user.Phone] = password
+	return nil
+}
+
+func (store *authMemoryStore) changePassword(userID string, oldPassword string, newPassword string) error {
+	store.mu.Lock()
+	defer store.mu.Unlock()
+
+	user, ok := store.usersByID[userID]
+	if !ok {
+		return errors.New("user not found")
+	}
+	if store.passwordsByPhone[user.Phone] != oldPassword {
+		return errPasswordMismatch
+	}
+
+	store.passwordsByPhone[user.Phone] = newPassword
+	return nil
 }
 
 func (store *authMemoryStore) seedPasswordUser(phone string, password string, nickname string) {

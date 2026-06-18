@@ -62,11 +62,37 @@ test('auth sms result rejects invalid backend fields', () => {
 test('auth session maps jwt token and snake case user id', () => {
   expect(
     AuthSession.fromJson({
+      account_id: 'account-1',
+      has_password: false,
+      should_set_password: true,
       token: 'jwt-token',
       user_id: 'user-1',
     }),
   ).toEqual(
     new AuthSession({
+      accountId: 'account-1',
+      hasPassword: false,
+      shouldSetPassword: true,
+      token: 'jwt-token',
+      userId: 'user-1',
+    }),
+  );
+});
+
+test('auth session can return a password-set copy', () => {
+  const session = new AuthSession({
+    accountId: 'account-1',
+    hasPassword: false,
+    shouldSetPassword: true,
+    token: 'jwt-token',
+    userId: 'user-1',
+  });
+
+  expect(session.withPasswordSet()).toEqual(
+    new AuthSession({
+      accountId: 'account-1',
+      hasPassword: true,
+      shouldSetPassword: false,
       token: 'jwt-token',
       userId: 'user-1',
     }),
@@ -76,21 +102,27 @@ test('auth session maps jwt token and snake case user id', () => {
 test('auth session rejects invalid token payloads', () => {
   expect(() =>
     AuthSession.fromJson({
+      has_password: false,
+      should_set_password: true,
       user_id: 'user-1',
     }),
   ).toThrow('Auth field "token" must be a string.');
 
   expect(() =>
     AuthSession.fromJson({
+      account_id: 'account-1',
+      has_password: 'false',
+      should_set_password: true,
       token: 'jwt-token',
-      user_id: 1,
+      user_id: 'user-1',
     }),
-  ).toThrow('Auth field "user_id" must be a string.');
+  ).toThrow('Auth field "has_password" must be a boolean.');
 });
 
 test('auth user profile maps backend response fields', () => {
   expect(
     AuthUserProfile.fromJson({
+      account_id: 'account-1',
       avatar: 'https://example.com/avatar.png',
       nickname: '产品经理',
       phone: '13800000001',
@@ -98,6 +130,7 @@ test('auth user profile maps backend response fields', () => {
     }),
   ).toEqual(
     new AuthUserProfile({
+      accountId: 'account-1',
       avatar: 'https://example.com/avatar.png',
       nickname: '产品经理',
       phone: '13800000001',

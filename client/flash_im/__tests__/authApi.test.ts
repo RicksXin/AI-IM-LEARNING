@@ -4,6 +4,8 @@
 
 import {
   AUTH_LOGIN_PATH,
+  AUTH_PASSWORD_CHANGE_PATH,
+  AUTH_PASSWORD_SETUP_PATH,
   AUTH_PROFILE_PATH,
   AUTH_SMS_PATH,
   AuthApi,
@@ -86,6 +88,7 @@ test('auth api sends sms with an injected client', async () => {
         phone: '13800000001',
       },
     }),
+    put: jest.fn(),
   };
   const api = new AuthApi({ client, tokenStore: createTokenStore() });
 
@@ -105,6 +108,7 @@ test('auth api saves login token and carries it when fetching profile', async ()
   const client: AuthHttpClient = {
     get: jest.fn().mockResolvedValue({
       data: {
+        account_id: 'account-1',
         avatar: 'https://example.com/avatar.png',
         nickname: '产品经理',
         phone: '13800000001',
@@ -113,21 +117,29 @@ test('auth api saves login token and carries it when fetching profile', async ()
     }),
     post: jest.fn().mockResolvedValue({
       data: {
+        account_id: 'account-1',
+        has_password: false,
+        should_set_password: true,
         token: 'jwt-token',
         user_id: 'user-1',
       },
     }),
+    put: jest.fn(),
   };
   const api = new AuthApi({ client, tokenStore });
 
   await expect(api.login('13800000001', '123456')).resolves.toEqual(
     new AuthSession({
+      accountId: 'account-1',
+      hasPassword: false,
+      shouldSetPassword: true,
       token: 'jwt-token',
       userId: 'user-1',
     }),
   );
   await expect(api.fetchProfile()).resolves.toEqual(
     new AuthUserProfile({
+      accountId: 'account-1',
       avatar: 'https://example.com/avatar.png',
       nickname: '产品经理',
       phone: '13800000001',
@@ -153,10 +165,14 @@ test('auth api supports password login with the login type enum', async () => {
     get: jest.fn(),
     post: jest.fn().mockResolvedValue({
       data: {
+        account_id: 'account-1',
+        has_password: true,
+        should_set_password: false,
         token: 'password-jwt-token',
         user_id: 'user-1',
       },
     }),
+    put: jest.fn(),
   };
   const api = new AuthApi({ client, tokenStore });
 
@@ -164,6 +180,9 @@ test('auth api supports password login with the login type enum', async () => {
     api.loginWithPassword('13800000001', 'im123456'),
   ).resolves.toEqual(
     new AuthSession({
+      accountId: 'account-1',
+      hasPassword: true,
+      shouldSetPassword: false,
       token: 'password-jwt-token',
       userId: 'user-1',
     }),
@@ -182,6 +201,7 @@ test('auth api does not save a token when password login fails', async () => {
   const client: AuthHttpClient = {
     get: jest.fn(),
     post: jest.fn().mockRejectedValue(new Error('invalid phone or password')),
+    put: jest.fn(),
   };
   const api = new AuthApi({ client, tokenStore });
 
@@ -203,10 +223,14 @@ test('auth api logout clears the saved token', async () => {
     get: jest.fn(),
     post: jest.fn().mockResolvedValue({
       data: {
+        account_id: 'account-1',
+        has_password: false,
+        should_set_password: true,
         token: 'jwt-token',
         user_id: 'user-1',
       },
     }),
+    put: jest.fn(),
   };
   const api = new AuthApi({ client, tokenStore });
 
@@ -221,9 +245,106 @@ test('auth api rejects profile fetch without a saved token', async () => {
   const client: AuthHttpClient = {
     get: jest.fn(),
     post: jest.fn(),
+    put: jest.fn(),
   };
   const api = new AuthApi({ client, tokenStore: createTokenStore() });
 
   await expect(api.fetchProfile()).rejects.toThrow('Auth token is missing.');
   expect(client.get).not.toHaveBeenCalled();
+});
+
+test('auth api sets password with the saved token', async () => {
+  const tokenStore = createTokenStore();
+  const client: AuthHttpClient = {
+    get: jest.fn(),
+    post: jest
+      .fn()
+      .mockResolvedValueOnce({
+        data: {
+          account_id: 'account-1',
+          has_password: false,
+          should_set_password: true,
+          token: 'jwt-token',
+          user_id: 'user-1',
+        },
+      })
+      .mockResolvedValueOnce({
+        data: {
+          ok: true,
+        },
+      }),
+    put: jest.fn(),
+  };
+  const api = new AuthApi({ client, tokenStore });
+
+  await api.login('13800000001', '123456');
+  await api.setupPassword('new123456');
+
+  expect(client.post).toHaveBeenLastCalledWith(
+    AUTH_PASSWORD_SETUP_PATH,
+    {
+      password: 'new123456',
+    },
+    {
+      headers: {
+        Authorization: 'Bearer jwt-token',
+      },
+    },
+  );
+});
+
+test('auth api changes password with the saved token', async () => {
+  const tokenStore = createTokenStore();
+  const client: AuthHttpClient = {
+    get: jest.fn(),
+    post: jest.fn().mockResolvedValue({
+      data: {
+        account_id: 'account-1',
+        has_password: true,
+        should_set_password: false,
+        token: 'jwt-token',
+        user_id: 'user-1',
+      },
+    }),
+    put: jest.fn().mockResolvedValue({
+      data: {
+        ok: true,
+      },
+    }),
+  };
+  const api = new AuthApi({ client, tokenStore });
+
+  await api.loginWithPassword('13800000001', 'old123456');
+  await api.changePassword('old123456', 'new123456');
+
+  expect(client.put).toHaveBeenCalledWith(
+    AUTH_PASSWORD_CHANGE_PATH,
+    {
+      new_password: 'new123456',
+      old_password: 'old123456',
+    },
+    {
+      headers: {
+        Authorization: 'Bearer jwt-token',
+      },
+    },
+  );
+});
+
+test('auth api rejects password updates without a token', async () => {
+  const client: AuthHttpClient = {
+    get: jest.fn(),
+    post: jest.fn(),
+    put: jest.fn(),
+  };
+  const api = new AuthApi({ client, tokenStore: createTokenStore() });
+
+  await expect(api.setupPassword('new123456')).rejects.toThrow(
+    'Auth token is missing.',
+  );
+  await expect(
+    api.changePassword('old123456', 'new123456'),
+  ).rejects.toThrow('Auth token is missing.');
+  expect(client.post).not.toHaveBeenCalled();
+  expect(client.put).not.toHaveBeenCalled();
 });

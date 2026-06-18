@@ -32,6 +32,11 @@ export type AuthHttpClient = {
     data?: unknown,
     config?: AuthRequestConfig,
   ): Promise<{ data: T }>;
+  put<T = unknown>(
+    url: string,
+    data?: unknown,
+    config?: AuthRequestConfig,
+  ): Promise<{ data: T }>;
 };
 
 export type AuthApiOptions = {
@@ -42,7 +47,9 @@ export type AuthApiOptions = {
 
 export const AUTH_SMS_PATH = '/auth/sms';
 export const AUTH_LOGIN_PATH = '/auth/login';
-export const AUTH_PROFILE_PATH = '/user/profile';
+export const AUTH_PROFILE_PATH = '/auth/profile';
+export const AUTH_PASSWORD_SETUP_PATH = '/auth/password/setup';
+export const AUTH_PASSWORD_CHANGE_PATH = '/auth/password';
 
 export const defaultAuthApiConfig: Required<
   Pick<AuthApiConfig, 'host' | 'port' | 'protocol' | 'timeoutMs'>
@@ -125,11 +132,7 @@ class AuthApi {
   }
 
   async fetchProfile() {
-    const token = this.tokenStore.getToken();
-
-    if (!token) {
-      throw new Error('Auth token is missing.');
-    }
+    const token = this.requireToken();
 
     const response = await this.client.get<AuthUserProfileJson>(
       AUTH_PROFILE_PATH,
@@ -143,6 +146,39 @@ class AuthApi {
     return AuthUserProfile.fromJson(response.data);
   }
 
+  async setupPassword(password: string) {
+    const token = this.requireToken();
+
+    await this.client.post(
+      AUTH_PASSWORD_SETUP_PATH,
+      {
+        password,
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      },
+    );
+  }
+
+  async changePassword(oldPassword: string, newPassword: string) {
+    const token = this.requireToken();
+
+    await this.client.put(
+      AUTH_PASSWORD_CHANGE_PATH,
+      {
+        old_password: oldPassword,
+        new_password: newPassword,
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      },
+    );
+  }
+
   logout() {
     this.tokenStore.clearToken();
   }
@@ -153,6 +189,16 @@ class AuthApi {
     this.tokenStore.saveToken(session.token);
 
     return session;
+  }
+
+  private requireToken() {
+    const token = this.tokenStore.getToken();
+
+    if (!token) {
+      throw new Error('Auth token is missing.');
+    }
+
+    return token;
   }
 }
 

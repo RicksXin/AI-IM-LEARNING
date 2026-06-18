@@ -1,6 +1,7 @@
 import { readAuthString } from './AuthJson';
 
 export type AuthUserProfileJson = {
+  account_id?: unknown;
   avatar?: unknown;
   nickname?: unknown;
   phone?: unknown;
@@ -8,6 +9,7 @@ export type AuthUserProfileJson = {
 };
 
 export type AuthUserProfileProps = {
+  accountId?: string;
   avatar: string;
   nickname: string;
   phone: string;
@@ -15,12 +17,14 @@ export type AuthUserProfileProps = {
 };
 
 class AuthUserProfile {
+  readonly accountId: string;
   readonly avatar: string;
   readonly nickname: string;
   readonly phone: string;
   readonly userId: string;
 
   constructor(props: AuthUserProfileProps) {
+    this.accountId = props.accountId ?? props.userId;
     this.avatar = props.avatar;
     this.nickname = props.nickname;
     this.phone = props.phone;
@@ -32,11 +36,17 @@ class AuthUserProfile {
   }
 
   static fromJson(json: AuthUserProfileJson) {
+    const userId = readAuthString(json.user_id, 'user_id');
+
     return new AuthUserProfile({
+      accountId:
+        typeof json.account_id === 'string'
+          ? json.account_id
+          : userId,
       avatar: readAuthString(json.avatar, 'avatar'),
       nickname: readAuthString(json.nickname, 'nickname'),
       phone: readAuthString(json.phone, 'phone'),
-      userId: readAuthString(json.user_id, 'user_id'),
+      userId,
     });
   }
 }

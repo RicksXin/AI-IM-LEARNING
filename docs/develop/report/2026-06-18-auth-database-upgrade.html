@@ -1,0 +1,325 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>认证数据库升级汇报</title>
+    <style>
+      :root {
+        --bg: #f6f8fb;
+        --panel: #ffffff;
+        --ink: #172033;
+        --muted: #667085;
+        --line: #d8e0ec;
+        --brand: #0f766e;
+        --brand-soft: #e7f6f3;
+        --code: #101828;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        background: var(--bg);
+        color: var(--ink);
+        font-family:
+          Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+          "Microsoft YaHei", sans-serif;
+        line-height: 1.7;
+        margin: 0;
+      }
+
+      main {
+        margin: 0 auto;
+        max-width: 1060px;
+        padding: 40px 24px 72px;
+      }
+
+      header,
+      section {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        margin-top: 18px;
+        padding: 24px;
+      }
+
+      header {
+        margin-top: 0;
+      }
+
+      .eyebrow {
+        color: var(--brand);
+        font-size: 13px;
+        font-weight: 800;
+        margin: 0 0 8px;
+      }
+
+      h1 {
+        font-size: 34px;
+        line-height: 1.2;
+        margin: 0;
+      }
+
+      h2 {
+        font-size: 22px;
+        margin: 0 0 12px;
+      }
+
+      h3 {
+        font-size: 17px;
+        margin: 20px 0 8px;
+      }
+
+      p {
+        margin: 10px 0;
+      }
+
+      ul {
+        margin: 10px 0 0;
+        padding-left: 22px;
+      }
+
+      li {
+        margin: 7px 0;
+      }
+
+      code,
+      pre {
+        font-family:
+          "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+      }
+
+      code {
+        background: #eef3f8;
+        border-radius: 5px;
+        padding: 2px 5px;
+      }
+
+      pre {
+        background: var(--code);
+        border-radius: 8px;
+        color: #f8fafc;
+        overflow: auto;
+        padding: 16px;
+      }
+
+      pre code {
+        background: transparent;
+        color: inherit;
+        padding: 0;
+      }
+
+      .summary {
+        color: var(--muted);
+        font-size: 16px;
+        margin-top: 12px;
+        max-width: 850px;
+      }
+
+      .grid {
+        display: grid;
+        gap: 14px;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .card {
+        background: #fbfcfe;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 16px;
+      }
+
+      .card h3 {
+        margin-top: 0;
+      }
+
+      .tag {
+        background: var(--brand-soft);
+        border: 1px solid #b8ddd6;
+        border-radius: 999px;
+        color: #115e59;
+        display: inline-block;
+        font-size: 12px;
+        font-weight: 800;
+        margin: 2px 6px 2px 0;
+        padding: 3px 8px;
+      }
+
+      .table-wrap {
+        overflow-x: auto;
+      }
+
+      table {
+        border-collapse: collapse;
+        min-width: 780px;
+        width: 100%;
+      }
+
+      th,
+      td {
+        border-bottom: 1px solid var(--line);
+        padding: 11px 10px;
+        text-align: left;
+        vertical-align: top;
+      }
+
+      th {
+        background: #f8fafc;
+        color: #344054;
+        font-size: 13px;
+      }
+
+      @media (max-width: 760px) {
+        .grid {
+          grid-template-columns: 1fr;
+        }
+
+        h1 {
+          font-size: 28px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <p class="eyebrow">2026-06-18 · Auth Database Upgrade</p>
+        <h1>认证系统数据库升级汇报</h1>
+        <p class="summary">
+          本次升级把 playground 认证系统从“内存/简单用户模型”推进到 MySQL 持久化账号模型，并补齐密码设置、密码修改、登录后密码引导标识和前端测试覆盖。
+        </p>
+      </header>
+
+      <section>
+        <h2>升级目标</h2>
+        <ul>
+          <li>用户数据从进程内存升级为可持久化的 MySQL 数据模型。</li>
+          <li>用 <code>accounts</code>、<code>user_profiles</code>、<code>auth_credentials</code>、<code>sms_codes</code> 表拆开身份、资料、凭据和验证码职责。</li>
+          <li>登录响应增加 <code>account_id</code>、<code>has_password</code>、<code>should_set_password</code>，供客户端判断是否需要引导设置密码。</li>
+          <li>保留现有短信登录、密码登录、JWT profile 和认证聊天室能力。</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>数据库模型</h2>
+        <div class="grid">
+          <div class="card">
+            <h3><code>accounts</code></h3>
+            <p>账号主体，保存稳定身份、账号编号和状态。它是认证系统里的“人是谁”。</p>
+          </div>
+          <div class="card">
+            <h3><code>user_profiles</code></h3>
+            <p>展示资料，和账号保持 1:1，保存昵称、头像、签名等前端可展示信息。</p>
+          </div>
+          <div class="card">
+            <h3><code>auth_credentials</code></h3>
+            <p>登录凭据，和账号保持 1:N。当前使用 <code>credential_type = phone</code>，手机号作为 identifier，密码哈希保存在 <code>secret_hash</code>。</p>
+          </div>
+          <div class="card">
+            <h3><code>sms_codes</code></h3>
+            <p>短信验证码，记录验证码、过期时间和消费时间。正式环境可继续演进为 Redis TTL。</p>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2>后端改造</h2>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>文件</th>
+                <th>变化</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>server/auth.go</code></td>
+                <td>扩展登录响应，新增密码设置/修改请求结构、Store 接口方法、JWT 用户解析复用和密码校验逻辑。</td>
+              </tr>
+              <tr>
+                <td><code>server/auth_mysql_store.go</code></td>
+                <td>切换到四表模型，短信验证码写入 <code>sms_codes</code>，密码使用 bcrypt 哈希保存到 <code>auth_credentials.secret_hash</code>。</td>
+              </tr>
+              <tr>
+                <td><code>server/router.go</code></td>
+                <td>新增 <code>/auth/profile</code>、<code>/auth/password/setup</code>、<code>/auth/password</code>，保留 <code>/user/profile</code> 兼容旧客户端。</td>
+              </tr>
+              <tr>
+                <td><code>server/migrations</code></td>
+                <td>新增 goose 迁移文件，覆盖账号、资料、凭据、短信验证码和旧验证码表升级。</td>
+              </tr>
+              <tr>
+                <td><code>scripts/database</code></td>
+                <td>新增创建、迁移、状态、重置、删除和启动前迁移脚本，脚本会检测并安装 goose。</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section>
+        <h2>接口变化</h2>
+        <p>
+          认证接口保持简单，但语义更接近正式 IM 产品：HTTP 登录拿 JWT，后续 HTTP profile 和 WebSocket 聊天室都用 JWT 证明身份。
+        </p>
+        <p>
+          <span class="tag">POST /auth/sms</span>
+          <span class="tag">POST /auth/login</span>
+          <span class="tag">GET /auth/profile</span>
+          <span class="tag">POST /auth/password/setup</span>
+          <span class="tag">PUT /auth/password</span>
+        </p>
+        <pre><code>{
+  "token": "jwt-token",
+  "user_id": "u_000001",
+  "account_id": "u_000001",
+  "has_password": false,
+  "should_set_password": true
+}</code></pre>
+      </section>
+
+      <section>
+        <h2>前端改造</h2>
+        <ul>
+          <li><code>AuthSession</code> 增加 <code>accountId</code>、<code>hasPassword</code>、<code>shouldSetPassword</code>。</li>
+          <li><code>AuthApi</code> 切换 profile 到 <code>/auth/profile</code>，新增设置密码和修改密码请求。</li>
+          <li>登录成功后，如果 <code>shouldSetPassword = true</code>，用户认证 playground 会展示设置密码引导。</li>
+          <li>个人信息页展示“已设置登录密码 / 未设置登录密码”。</li>
+          <li>认证聊天室测试数据同步升级到新登录响应，确保跨模块仍能复用认证层。</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>验证结果</h2>
+        <pre><code>cd server
+go test ./...
+
+结果：ok learningai/server</code></pre>
+        <pre><code>cd client/flash_im
+pnpm test
+
+结果：15 passed, 15 total
+测试：74 passed, 74 total</code></pre>
+        <pre><code>./scripts/database/database_status.sh
+
+结果：202606180001 - 202606180005 全部 Applied
+目标库：flash_im
+目标容器：flash-im-mysql</code></pre>
+      </section>
+
+      <section>
+        <h2>兼容与边界</h2>
+        <ul>
+          <li>后端仍保留 <code>/user/profile</code>，兼容旧客户端；新客户端使用 <code>/auth/profile</code>。</li>
+          <li>JSON 仍返回 <code>user_id</code>，同时增加 <code>account_id</code>，方便前端逐步迁移命名。</li>
+          <li>当前密码凭据复用 <code>credential_type = phone</code> 行的 <code>secret_hash</code> 字段，后续可扩展邮箱、微信、设备等凭据类型。</li>
+          <li>JWT 密钥仍是 playground 配置，生产环境需要改为环境变量或密钥管理系统。</li>
+          <li>验证码落 MySQL 便于学习观察，生产环境更适合 Redis TTL 和频率限制。</li>
+        </ul>
+      </section>
+    </main>
+  </body>
+</html>

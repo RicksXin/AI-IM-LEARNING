@@ -5,3 +5,11 @@ export function readAuthString(value: unknown, fieldName: string) {
 
   return value;
 }
+
+export function readAuthBoolean(value: unknown, fieldName: string) {
+  if (typeof value !== 'boolean') {
+    throw new Error(`Auth field "${fieldName}" must be a boolean.`);
+  }
+
+  return value;
+}

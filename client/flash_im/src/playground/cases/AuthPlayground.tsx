@@ -8,6 +8,7 @@ import {
   getAuthToken,
 } from '../auth';
 import type AuthUserProfile from '../auth/model/AuthUserProfile';
+import type AuthSession from '../auth/model/AuthSession';
 import { getDefaultPlaygroundHost } from '../config/playgroundNetwork';
 import AuthScreen from '../auth/view/AuthScreen';
 
@@ -27,11 +28,18 @@ function AuthPlayground({ onBack }: AuthPlaygroundProps) {
   const [countdownSeconds, setCountdownSeconds] = useState(0);
   const [isSendingCode, setIsSendingCode] = useState(false);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [isSettingPassword, setIsSettingPassword] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | undefined>();
+  const [passwordSetupError, setPasswordSetupError] = useState<
+    string | undefined
+  >();
   const [statusMessage, setStatusMessage] = useState<string | undefined>(
     '启动后端后，先发送验证码；密码登录可用 13800000001 / im123456。',
   );
   const [profile, setProfile] = useState<AuthUserProfile | undefined>();
+  const [session, setSession] = useState<AuthSession | undefined>();
+  const [setupPassword, setSetupPassword] = useState('');
+  const [setupPasswordConfirm, setSetupPasswordConfirm] = useState('');
 
   const endpointLabel = useMemo(() => {
     try {
@@ -104,16 +112,21 @@ function AuthPlayground({ onBack }: AuthPlaygroundProps) {
 
     try {
       const api = createApi();
+      const nextSession =
+        loginType === AuthLoginType.Password
+          ? await api.loginWithPassword(phone.trim(), password.trim())
+          : await api.loginWithSms(phone.trim(), code.trim());
 
-      if (loginType === AuthLoginType.Password) {
-        await api.loginWithPassword(phone.trim(), password.trim());
-      } else {
-        await api.loginWithSms(phone.trim(), code.trim());
-      }
       const nextProfile = await api.fetchProfile();
 
+      setSession(nextSession);
       setProfile(nextProfile);
-      setStatusMessage('登录成功，Token 已保存。');
+      setPasswordSetupError(undefined);
+      setStatusMessage(
+        nextSession.shouldSetPassword
+          ? '登录成功，请设置登录密码。'
+          : '登录成功，Token 已保存。',
+      );
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : '登录失败');
     } finally {
@@ -124,8 +137,12 @@ function AuthPlayground({ onBack }: AuthPlaygroundProps) {
   const handleLogout = useCallback(() => {
     createApi().logout();
     setProfile(undefined);
+    setSession(undefined);
     setCode('');
+    setSetupPassword('');
+    setSetupPasswordConfirm('');
     setErrorMessage(undefined);
+    setPasswordSetupError(undefined);
     setStatusMessage('已退出登录，Token 已清除。');
   }, [createApi]);
 
@@ -138,6 +155,44 @@ function AuthPlayground({ onBack }: AuthPlaygroundProps) {
         : '启动后端后，先发送验证码。',
     );
   }, []);
+
+  const handleSetupPassword = useCallback(async () => {
+    const nextPassword = setupPassword.trim();
+    const nextConfirm = setupPasswordConfirm.trim();
+
+    if (!nextPassword) {
+      setPasswordSetupError('请输入新密码。');
+      return;
+    }
+
+    if (nextPassword.length < 6) {
+      setPasswordSetupError('密码至少 6 位。');
+      return;
+    }
+
+    if (nextPassword !== nextConfirm) {
+      setPasswordSetupError('两次输入的密码不一致。');
+      return;
+    }
+
+    setIsSettingPassword(true);
+    setPasswordSetupError(undefined);
+    setErrorMessage(undefined);
+
+    try {
+      await createApi().setupPassword(nextPassword);
+      setSession(current => current?.withPasswordSet());
+      setSetupPassword('');
+      setSetupPasswordConfirm('');
+      setStatusMessage('登录密码已设置。');
+    } catch (error) {
+      setPasswordSetupError(
+        error instanceof Error ? error.message : '密码设置失败',
+      );
+    } finally {
+      setIsSettingPassword(false);
+    }
+  }, [createApi, setupPassword, setupPasswordConfirm]);
 
   useEffect(() => {
     if (countdownSeconds <= 0) {
@@ -159,12 +214,17 @@ function AuthPlayground({ onBack }: AuthPlaygroundProps) {
       errorMessage={errorMessage}
       host={host}
       isLoggingIn={isLoggingIn}
+      isSettingPassword={isSettingPassword}
       isSendingCode={isSendingCode}
       loginType={loginType}
       password={password}
+      passwordSetupError={passwordSetupError}
       phone={phone}
       port={port}
       profile={profile}
+      session={session}
+      setupPassword={setupPassword}
+      setupPasswordConfirm={setupPasswordConfirm}
       statusMessage={statusMessage}
       tokenPreview={tokenPreview}
       onBack={onBack}
@@ -177,6 +237,9 @@ function AuthPlayground({ onBack }: AuthPlaygroundProps) {
       onPhoneChange={setPhone}
       onPortChange={setPort}
       onSendCode={handleSendCode}
+      onSetupPassword={handleSetupPassword}
+      onSetupPasswordChange={setSetupPassword}
+      onSetupPasswordConfirmChange={setSetupPasswordConfirm}
     />
   );
 }

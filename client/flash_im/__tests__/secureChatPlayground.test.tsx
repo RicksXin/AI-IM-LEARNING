@@ -88,6 +88,7 @@ function createSuccessfulAuthClient(): FakeAuthClient {
       if (url === AUTH_PROFILE_PATH) {
         return Promise.resolve({
           data: {
+            account_id: 'u_000001',
             avatar: 'https://example.com/avatar.png',
             nickname: '13800000001',
             phone: '13800000001',
@@ -111,6 +112,9 @@ function createSuccessfulAuthClient(): FakeAuthClient {
       if (url === AUTH_LOGIN_PATH) {
         return Promise.resolve({
           data: {
+            account_id: 'u_000001',
+            has_password: true,
+            should_set_password: false,
             token: 'jwt-token-for-secure-chat',
             user_id: 'u_000001',
           },

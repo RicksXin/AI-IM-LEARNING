@@ -13,6 +13,9 @@ func setupRouter() *gin.Engine {
 	router.GET("/chat_room/status", chatRoomEndpointStatus)
 	router.POST("/auth/sms", handleSendSMS)
 	router.POST("/auth/login", handleLogin)
+	router.GET("/auth/profile", handleUserProfile)
+	router.POST("/auth/password/setup", handlePasswordSetup)
+	router.PUT("/auth/password", handlePasswordChange)
 	router.GET("/user/profile", handleUserProfile)
 
 	return router

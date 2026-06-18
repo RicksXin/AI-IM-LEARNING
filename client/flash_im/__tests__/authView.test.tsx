@@ -5,6 +5,7 @@
 import React from 'react';
 import ReactTestRenderer from 'react-test-renderer';
 import { AuthLoginType } from '../src/playground/auth';
+import AuthSession from '../src/playground/auth/model/AuthSession';
 import AuthUserProfile from '../src/playground/auth/model/AuthUserProfile';
 import AuthScreen from '../src/playground/auth/view/AuthScreen';
 
@@ -21,7 +22,7 @@ jest.mock('react-native-safe-area-context', () => {
 const baseProps = {
   code: '',
   countdownSeconds: 0,
-  endpointLabel: 'http://127.0.0.1:8080/user/profile',
+  endpointLabel: 'http://127.0.0.1:8080/auth/profile',
   host: '127.0.0.1',
   isLoggingIn: false,
   isSendingCode: false,
@@ -60,7 +61,7 @@ test('auth screen renders the login form and actions', async () => {
   const output = JSON.stringify(renderer?.toJSON());
   expect(output).toContain('用户认证');
   expect(output).toContain('手机号验证码登录');
-  expect(output).toContain('http://127.0.0.1:8080/user/profile');
+  expect(output).toContain('http://127.0.0.1:8080/auth/profile');
 
   const sendCodeButton = renderer?.root.findByProps({
     accessibilityLabel: '发送登录验证码',
@@ -171,6 +172,7 @@ test('auth screen renders profile and logout action after login', async () => {
   let renderer: ReactTestRenderer.ReactTestRenderer | undefined;
   const onLogout = jest.fn();
   const profile = new AuthUserProfile({
+    accountId: 'user-1',
     avatar: 'https://example.com/avatar.png',
     nickname: '13800000001',
     phone: '13800000001',
@@ -182,6 +184,15 @@ test('auth screen renders profile and logout action after login', async () => {
       <AuthScreen
         {...baseProps}
         profile={profile}
+        session={
+          new AuthSession({
+            accountId: 'user-1',
+            hasPassword: true,
+            shouldSetPassword: false,
+            token: 'jwt-token',
+            userId: 'user-1',
+          })
+        }
         tokenPreview="jwt...token"
         onLogout={onLogout}
       />,
@@ -193,6 +204,7 @@ test('auth screen renders profile and logout action after login', async () => {
   expect(output).toContain('13800000001');
   expect(output).toContain('user-1');
   expect(output).toContain('jwt...token');
+  expect(output).toContain('已设置登录密码');
 
   const logoutButton = renderer?.root.findByProps({
     accessibilityLabel: '退出用户认证',
@@ -202,4 +214,116 @@ test('auth screen renders profile and logout action after login', async () => {
   });
 
   expect(onLogout).toHaveBeenCalledTimes(1);
+});
+
+test('auth screen renders password setup panel after sms login', async () => {
+  let renderer: ReactTestRenderer.ReactTestRenderer | undefined;
+  const onSetupPassword = jest.fn();
+  const onSetupPasswordChange = jest.fn();
+  const onSetupPasswordConfirmChange = jest.fn();
+  const profile = new AuthUserProfile({
+    accountId: 'user-1',
+    avatar: 'https://example.com/avatar.png',
+    nickname: '13800000001',
+    phone: '13800000001',
+    userId: 'user-1',
+  });
+
+  await ReactTestRenderer.act(async () => {
+    renderer = ReactTestRenderer.create(
+      <AuthScreen
+        {...baseProps}
+        passwordSetupError="两次输入的密码不一致。"
+        profile={profile}
+        session={
+          new AuthSession({
+            accountId: 'user-1',
+            hasPassword: false,
+            shouldSetPassword: true,
+            token: 'jwt-token',
+            userId: 'user-1',
+          })
+        }
+        setupPassword="new123456"
+        setupPasswordConfirm="new12345"
+        onSetupPassword={onSetupPassword}
+        onSetupPasswordChange={onSetupPasswordChange}
+        onSetupPasswordConfirmChange={onSetupPasswordConfirmChange}
+      />,
+    );
+  });
+
+  const output = JSON.stringify(renderer?.toJSON());
+  expect(output).toContain('设置登录密码');
+  expect(output).toContain('未设置登录密码');
+  expect(output).toContain('两次输入的密码不一致。');
+
+  const passwordInput = renderer?.root.findByProps({
+    accessibilityLabel: '设置密码输入',
+  });
+  const confirmInput = renderer?.root.findByProps({
+    accessibilityLabel: '确认设置密码输入',
+  });
+  const submitButton = renderer?.root.findByProps({
+    accessibilityLabel: '保存登录密码',
+  });
+
+  await ReactTestRenderer.act(async () => {
+    passwordInput?.props.onChangeText('new123456');
+    confirmInput?.props.onChangeText('new123456');
+    submitButton?.props.onPress();
+  });
+
+  expect(onSetupPasswordChange).toHaveBeenCalledWith('new123456');
+  expect(onSetupPasswordConfirmChange).toHaveBeenCalledWith('new123456');
+  expect(onSetupPassword).toHaveBeenCalledTimes(1);
+});
+
+test('auth screen toggles setup password visibility with the eye button', async () => {
+  let renderer: ReactTestRenderer.ReactTestRenderer | undefined;
+  const profile = new AuthUserProfile({
+    avatar: 'https://example.com/avatar.png',
+    nickname: '13800000001',
+    phone: '13800000001',
+    userId: 'user-1',
+  });
+
+  await ReactTestRenderer.act(async () => {
+    renderer = ReactTestRenderer.create(
+      <AuthScreen
+        {...baseProps}
+        profile={profile}
+        session={
+          new AuthSession({
+            accountId: 'user-1',
+            hasPassword: false,
+            shouldSetPassword: true,
+            token: 'jwt-token',
+            userId: 'user-1',
+          })
+        }
+      />,
+    );
+  });
+
+  const passwordInput = renderer?.root.findByProps({
+    accessibilityLabel: '设置密码输入',
+  });
+  expect(passwordInput?.props.secureTextEntry).toBe(true);
+
+  const showPasswordButton = renderer?.root.findByProps({
+    accessibilityLabel: '显示设置密码',
+  });
+  await ReactTestRenderer.act(async () => {
+    showPasswordButton?.props.onPress();
+  });
+
+  const visiblePasswordInput = renderer?.root.findByProps({
+    accessibilityLabel: '设置密码输入',
+  });
+  const visibleConfirmInput = renderer?.root.findByProps({
+    accessibilityLabel: '确认设置密码输入',
+  });
+  expect(visiblePasswordInput?.props.secureTextEntry).toBe(false);
+  expect(visibleConfirmInput?.props.secureTextEntry).toBe(false);
 });

@@ -1,0 +1,184 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="1060" viewBox="0 0 1440 1060" role="img" aria-labelledby="title desc">
+  <title id="title">IM 认证系统数据库设计图</title>
+  <desc id="desc">Go 即时通信后端认证系统的 MySQL 数据库设计，包含 accounts、user_profiles、auth_credentials 和 sms_codes 表关系。</desc>
+  <defs>
+    <style>
+      .bg { fill: #f6f8fb; }
+      .panel { fill: #ffffff; stroke: #d7e0ec; stroke-width: 1.4; }
+      .table-head { fill: #17324d; }
+      .table-head-green { fill: #1f6f62; }
+      .table-head-blue { fill: #1d5c73; }
+      .table-head-gold { fill: #77551a; }
+      .title { fill: #132033; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif; font-size: 34px; font-weight: 800; }
+      .subtitle { fill: #667085; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif; font-size: 16px; }
+      .section-title { fill: #132033; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif; font-size: 20px; font-weight: 800; }
+      .table-title { fill: #ffffff; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif; font-size: 20px; font-weight: 800; }
+      .table-note { fill: #dce8f5; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif; font-size: 12px; font-weight: 600; }
+      .field { fill: #2f3b52; font-family: "SFMono-Regular", Consolas, "Microsoft YaHei", monospace; font-size: 14px; }
+      .field-muted { fill: #667085; font-family: "SFMono-Regular", Consolas, "Microsoft YaHei", monospace; font-size: 14px; }
+      .pk { fill: #e9f7ef; stroke: #a6dbbd; stroke-width: 1; }
+      .fk { fill: #eaf3ff; stroke: #b9d6f8; stroke-width: 1; }
+      .unique { fill: #f3efff; stroke: #c7b9f8; stroke-width: 1; }
+      .ttl { fill: #fff7e8; stroke: #f4c77d; stroke-width: 1; }
+      .legend-text { fill: #344054; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif; font-size: 14px; }
+      .relationship { fill: none; stroke: #49647f; stroke-width: 2.2; }
+      .relationship-dashed { fill: none; stroke: #9a6a1a; stroke-width: 2; stroke-dasharray: 7 6; }
+      .rel-label { fill: #344054; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif; font-size: 13px; font-weight: 700; }
+      .caption { fill: #667085; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif; font-size: 13px; }
+      .flow-box { fill: #ffffff; stroke: #d7e0ec; stroke-width: 1.2; }
+      .flow-text { fill: #172033; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif; font-size: 15px; font-weight: 800; }
+      .flow-sub { fill: #667085; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif; font-size: 12px; }
+    </style>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="14" stdDeviation="18" flood-color="#172033" flood-opacity="0.11"/>
+    </filter>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#49647f"/>
+    </marker>
+    <marker id="arrow-dashed" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#9a6a1a"/>
+    </marker>
+  </defs>
+
+  <rect class="bg" x="0" y="0" width="1440" height="1060"/>
+
+  <text class="title" x="72" y="72">IM 认证系统数据库设计图</text>
+  <text class="subtitle" x="72" y="104">正式产品方向：账户主体、用户资料、登录凭据、短信验证码分层存储，便于扩展多登录方式</text>
+
+  <g transform="translate(72 136)">
+    <rect class="flow-box" x="0" y="0" width="300" height="78" rx="8"/>
+    <text class="flow-text" x="22" y="31">账号主体</text>
+    <text class="flow-sub" x="22" y="54">accounts 只保存稳定身份和账号状态</text>
+
+    <rect class="flow-box" x="324" y="0" width="300" height="78" rx="8"/>
+    <text class="flow-text" x="346" y="31">展示资料</text>
+    <text class="flow-sub" x="346" y="54">user_profiles 与 accounts 一对一</text>
+
+    <rect class="flow-box" x="648" y="0" width="300" height="78" rx="8"/>
+    <text class="flow-text" x="670" y="31">登录凭据</text>
+    <text class="flow-sub" x="670" y="54">auth_credentials 支持手机、邮箱、微信等</text>
+
+    <rect class="flow-box" x="972" y="0" width="300" height="78" rx="8"/>
+    <text class="flow-text" x="994" y="31">验证码</text>
+    <text class="flow-sub" x="994" y="54">sms_codes 独立存储，可迁移 Redis TTL</text>
+  </g>
+
+  <g id="accounts" transform="translate(72 260)" filter="url(#shadow)">
+    <rect class="panel" x="0" y="0" width="390" height="360" rx="10"/>
+    <rect class="table-head" x="0" y="0" width="390" height="72" rx="10"/>
+    <path d="M0 62 H390 V72 H0 Z" fill="#17324d"/>
+    <text class="table-title" x="24" y="31">accounts</text>
+    <text class="table-note" x="24" y="54">账户主体，系统内唯一身份标识</text>
+
+    <rect class="pk" x="18" y="90" width="354" height="32" rx="6"/>
+    <text class="field" x="32" y="111">PK  id varchar(32)</text>
+    <rect class="unique" x="18" y="132" width="354" height="32" rx="6"/>
+    <text class="field" x="32" y="153">UNIQUE account_no varchar(64)</text>
+    <text class="field" x="32" y="196">status varchar(32)</text>
+    <text class="field-muted" x="32" y="222">  active | disabled | deleted</text>
+    <text class="field" x="32" y="262">created_at timestamp</text>
+    <text class="field" x="32" y="302">updated_at timestamp</text>
+    <text class="caption" x="24" y="338">说明：不放昵称、头像、手机号等易变化信息。</text>
+  </g>
+
+  <g id="user-profiles" transform="translate(560 260)" filter="url(#shadow)">
+    <rect class="panel" x="0" y="0" width="390" height="360" rx="10"/>
+    <rect class="table-head-green" x="0" y="0" width="390" height="72" rx="10"/>
+    <path d="M0 62 H390 V72 H0 Z" fill="#1f6f62"/>
+    <text class="table-title" x="24" y="31">user_profiles</text>
+    <text class="table-note" x="24" y="54">展示信息，accounts 1:1</text>
+
+    <rect class="pk" x="18" y="90" width="354" height="32" rx="6"/>
+    <text class="field" x="32" y="111">PK  account_id varchar(32)</text>
+    <rect class="fk" x="18" y="132" width="354" height="32" rx="6"/>
+    <text class="field" x="32" y="153">FK  account_id -> accounts.id</text>
+    <text class="field" x="32" y="196">nickname varchar(128)</text>
+    <text class="field" x="32" y="236">avatar_url varchar(255)</text>
+    <text class="field" x="32" y="276">signature varchar(255)</text>
+    <text class="field" x="32" y="316">updated_at timestamp</text>
+    <text class="caption" x="24" y="338">说明：未来可继续扩展地区、性别、二维码等资料。</text>
+  </g>
+
+  <g id="auth-credentials" transform="translate(72 704)" filter="url(#shadow)">
+    <rect class="panel" x="0" y="0" width="580" height="280" rx="10"/>
+    <rect class="table-head-blue" x="0" y="0" width="580" height="72" rx="10"/>
+    <path d="M0 62 H580 V72 H0 Z" fill="#1d5c73"/>
+    <text class="table-title" x="24" y="31">auth_credentials</text>
+    <text class="table-note" x="24" y="54">登录方式及凭据，accounts 1:N</text>
+
+    <rect class="pk" x="18" y="90" width="258" height="32" rx="6"/>
+    <text class="field" x="32" y="111">PK  id bigint unsigned</text>
+    <rect class="fk" x="304" y="90" width="258" height="32" rx="6"/>
+    <text class="field" x="318" y="111">FK  account_id -> accounts.id</text>
+    <text class="field" x="32" y="156">credential_type varchar(32)</text>
+    <text class="field-muted" x="318" y="156">phone | email | wechat | apple</text>
+    <text class="field" x="32" y="196">identifier varchar(128)</text>
+    <text class="field-muted" x="318" y="196">手机号 / 邮箱 / open_id</text>
+    <text class="field" x="32" y="236">secret_hash varchar(255) null</text>
+    <text class="field-muted" x="318" y="236">密码哈希；第三方登录可为空</text>
+    <text class="caption" x="24" y="263">约束：UNIQUE(credential_type, identifier)，同一账号可绑定多种登录方式。</text>
+  </g>
+
+  <g id="sms-codes" transform="translate(780 704)" filter="url(#shadow)">
+    <rect class="panel" x="0" y="0" width="420" height="280" rx="10"/>
+    <rect class="table-head-gold" x="0" y="0" width="420" height="72" rx="10"/>
+    <path d="M0 62 H420 V72 H0 Z" fill="#77551a"/>
+    <text class="table-title" x="24" y="31">sms_codes</text>
+    <text class="table-note" x="24" y="54">短信验证码及过期时间，独立表</text>
+
+    <rect class="pk" x="18" y="90" width="384" height="32" rx="6"/>
+    <text class="field" x="32" y="111">PK  id bigint unsigned</text>
+    <rect class="unique" x="18" y="132" width="384" height="32" rx="6"/>
+    <text class="field" x="32" y="153">INDEX phone varchar(32)</text>
+    <text class="field" x="32" y="194">code varchar(12) not null</text>
+    <rect class="ttl" x="18" y="214" width="384" height="32" rx="6"/>
+    <text class="field" x="32" y="235">expires_at timestamp not null</text>
+    <text class="field" x="32" y="267">consumed_at timestamp null</text>
+  </g>
+
+  <path class="relationship" d="M462 430 C508 430, 516 430, 560 430" marker-end="url(#arrow)"/>
+  <text class="rel-label" x="489" y="410">1 : 1</text>
+  <text class="caption" x="476" y="452">accounts.id -> user_profiles.account_id</text>
+
+  <path class="relationship" d="M268 620 C268 660, 268 668, 268 704" marker-end="url(#arrow)"/>
+  <text class="rel-label" x="288" y="670">1 : N</text>
+  <text class="caption" x="288" y="692">accounts.id -> auth_credentials.account_id</text>
+
+  <path class="relationship-dashed" d="M1030 704 C1030 662, 1010 648, 952 620 C892 586, 820 568, 694 568" marker-end="url(#arrow-dashed)"/>
+  <text class="rel-label" x="1050" y="674">phone</text>
+  <text class="caption" x="1048" y="696">短信验证码按手机号校验后绑定凭据</text>
+
+  <g transform="translate(1018 260)">
+    <text class="section-title" x="0" y="0">设计原则</text>
+    <rect class="panel" x="0" y="24" width="350" height="300" rx="10"/>
+    <text class="field" x="24" y="66">1. accounts 是稳定主键</text>
+    <text class="field-muted" x="24" y="96">账号状态、创建时间归这里</text>
+    <text class="field" x="24" y="136">2. user_profiles 负责展示</text>
+    <text class="field-muted" x="24" y="166">昵称、头像、签名独立演进</text>
+    <text class="field" x="24" y="206">3. auth_credentials 承载登录</text>
+    <text class="field-muted" x="24" y="236">手机、邮箱、微信等统一建模</text>
+    <text class="field" x="24" y="276">4. sms_codes 可后续迁移</text>
+    <text class="field-muted" x="24" y="306">生产环境更适合 Redis TTL</text>
+  </g>
+
+  <g transform="translate(1018 604)">
+    <text class="section-title" x="0" y="0">登录返回建议</text>
+    <rect class="panel" x="0" y="24" width="350" height="188" rx="10"/>
+    <text class="field" x="24" y="66">token: string</text>
+    <text class="field" x="24" y="96">account_id: string</text>
+    <text class="field" x="24" y="126">user_id: alias of account_id</text>
+    <text class="field" x="24" y="156">has_password: boolean</text>
+    <text class="field" x="24" y="186">should_set_password: boolean</text>
+  </g>
+
+  <g transform="translate(72 1022)">
+    <rect x="0" y="-20" width="18" height="18" rx="4" class="pk"/>
+    <text class="legend-text" x="28" y="-6">主键</text>
+    <rect x="94" y="-20" width="18" height="18" rx="4" class="fk"/>
+    <text class="legend-text" x="122" y="-6">外键</text>
+    <rect x="188" y="-20" width="18" height="18" rx="4" class="unique"/>
+    <text class="legend-text" x="216" y="-6">唯一约束 / 索引</text>
+    <rect x="362" y="-20" width="18" height="18" rx="4" class="ttl"/>
+    <text class="legend-text" x="390" y="-6">过期时间 / 临时数据</text>
+  </g>
+</svg>
