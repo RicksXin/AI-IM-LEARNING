@@ -9,16 +9,18 @@ import (
 	"strings"
 	"testing"
 
+	flashauth "learningai/server/modules/flash_auth"
+
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 )
 
 func resetAuthStoreForTest() {
-	authStore = newAuthMemoryStore()
+	flashauth.ResetStoreForTest()
 	defaultChatRoomHub = newChatRoomHub()
 }
 
-func loginBySMSForTest(t *testing.T, router *gin.Engine, phone string) LoginResponse {
+func loginBySMSForTest(t *testing.T, router *gin.Engine, phone string) flashauth.LoginResponse {
 	t.Helper()
 
 	smsRecorder := httptest.NewRecorder()
@@ -34,7 +36,7 @@ func loginBySMSForTest(t *testing.T, router *gin.Engine, phone string) LoginResp
 		t.Fatalf("POST /auth/sms status = %d, want %d; body = %s", smsRecorder.Code, http.StatusOK, smsRecorder.Body.String())
 	}
 
-	var smsResponse SMSResponse
+	var smsResponse flashauth.SMSResponse
 	if err := json.Unmarshal(smsRecorder.Body.Bytes(), &smsResponse); err != nil {
 		t.Fatalf("decode sms response: %v", err)
 	}
@@ -49,7 +51,7 @@ func loginBySMSForTest(t *testing.T, router *gin.Engine, phone string) LoginResp
 		t.Fatalf("POST /auth/login status = %d, want %d; body = %s", loginRecorder.Code, http.StatusOK, loginRecorder.Body.String())
 	}
 
-	var loginResponse LoginResponse
+	var loginResponse flashauth.LoginResponse
 	if err := json.Unmarshal(loginRecorder.Body.Bytes(), &loginResponse); err != nil {
 		t.Fatalf("decode login response: %v", err)
 	}
@@ -169,11 +171,11 @@ func TestChatRoomWebSocketAuthenticatesThenHandlesPingAndChat(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	resetAuthStoreForTest()
 
-	user, err := authStore.findOrCreateUserByPhone("13800000001")
+	user, err := flashauth.FindOrCreateUserByPhone("13800000001")
 	if err != nil {
 		t.Fatalf("create auth user: %v", err)
 	}
-	token, err := generateJWTForUser(user.UserID)
+	token, err := flashauth.GenerateJWTForUser(user.UserID)
 	if err != nil {
 		t.Fatalf("generate jwt: %v", err)
 	}
@@ -258,19 +260,19 @@ func TestChatRoomWebSocketBroadcastsChatToAuthenticatedClients(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	resetAuthStoreForTest()
 
-	sender, err := authStore.findOrCreateUserByPhone("13800000001")
+	sender, err := flashauth.FindOrCreateUserByPhone("13800000001")
 	if err != nil {
 		t.Fatalf("create sender auth user: %v", err)
 	}
-	receiver, err := authStore.findOrCreateUserByPhone("13800000002")
+	receiver, err := flashauth.FindOrCreateUserByPhone("13800000002")
 	if err != nil {
 		t.Fatalf("create receiver auth user: %v", err)
 	}
-	senderToken, err := generateJWTForUser(sender.UserID)
+	senderToken, err := flashauth.GenerateJWTForUser(sender.UserID)
 	if err != nil {
 		t.Fatalf("generate sender jwt: %v", err)
 	}
-	receiverToken, err := generateJWTForUser(receiver.UserID)
+	receiverToken, err := flashauth.GenerateJWTForUser(receiver.UserID)
 	if err != nil {
 		t.Fatalf("generate receiver jwt: %v", err)
 	}
@@ -457,7 +459,7 @@ func TestAuthSMSLoginAndProfileFlow(t *testing.T) {
 		t.Fatalf("POST /auth/sms status = %d, want %d", smsRecorder.Code, http.StatusOK)
 	}
 
-	var smsResponse SMSResponse
+	var smsResponse flashauth.SMSResponse
 	if err := json.Unmarshal(smsRecorder.Body.Bytes(), &smsResponse); err != nil {
 		t.Fatalf("decode sms response: %v", err)
 	}
@@ -481,7 +483,7 @@ func TestAuthSMSLoginAndProfileFlow(t *testing.T) {
 		t.Fatalf("POST /auth/login status = %d, want %d", loginRecorder.Code, http.StatusOK)
 	}
 
-	var loginResponse LoginResponse
+	var loginResponse flashauth.LoginResponse
 	if err := json.Unmarshal(loginRecorder.Body.Bytes(), &loginResponse); err != nil {
 		t.Fatalf("decode login response: %v", err)
 	}
@@ -506,7 +508,7 @@ func TestAuthSMSLoginAndProfileFlow(t *testing.T) {
 		t.Fatal("login response token is empty")
 	}
 
-	userIDFromToken, err := parseUserIDFromJWT(loginResponse.Token)
+	userIDFromToken, err := flashauth.ParseUserIDFromJWT(loginResponse.Token)
 	if err != nil {
 		t.Fatalf("parse jwt token: %v", err)
 	}
@@ -525,7 +527,7 @@ func TestAuthSMSLoginAndProfileFlow(t *testing.T) {
 		t.Fatalf("GET /auth/profile status = %d, want %d", profileRecorder.Code, http.StatusOK)
 	}
 
-	var profile UserProfileResponse
+	var profile flashauth.UserProfileResponse
 	if err := json.Unmarshal(profileRecorder.Body.Bytes(), &profile); err != nil {
 		t.Fatalf("decode profile response: %v", err)
 	}
@@ -563,7 +565,7 @@ func TestAuthPasswordLoginAndProfileFlow(t *testing.T) {
 		t.Fatalf("POST /auth/login status = %d, want %d", loginRecorder.Code, http.StatusOK)
 	}
 
-	var loginResponse LoginResponse
+	var loginResponse flashauth.LoginResponse
 	if err := json.Unmarshal(loginRecorder.Body.Bytes(), &loginResponse); err != nil {
 		t.Fatalf("decode login response: %v", err)
 	}
@@ -598,7 +600,7 @@ func TestAuthPasswordLoginAndProfileFlow(t *testing.T) {
 		t.Fatalf("GET /user/profile status = %d, want %d", profileRecorder.Code, http.StatusOK)
 	}
 
-	var profile UserProfileResponse
+	var profile flashauth.UserProfileResponse
 	if err := json.Unmarshal(profileRecorder.Body.Bytes(), &profile); err != nil {
 		t.Fatalf("decode profile response: %v", err)
 	}

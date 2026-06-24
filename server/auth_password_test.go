@@ -7,6 +7,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	flashauth "learningai/server/modules/flash_auth"
+
 	"github.com/gin-gonic/gin"
 )
 
@@ -84,7 +86,7 @@ func TestPasswordSetupAllowsSMSUserToCreatePassword(t *testing.T) {
 		t.Fatalf("password login status = %d, want %d; body = %s", loginRecorder.Code, http.StatusOK, loginRecorder.Body.String())
 	}
 
-	var loginResponse LoginResponse
+	var loginResponse flashauth.LoginResponse
 	if err := json.Unmarshal(loginRecorder.Body.Bytes(), &loginResponse); err != nil {
 		t.Fatalf("decode password login: %v", err)
 	}

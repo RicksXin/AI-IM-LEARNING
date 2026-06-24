@@ -1,9 +1,9 @@
-package main
+package flashauth
 
 import "testing"
 
 func TestAuthStoreContractSMSLoginCreatesAccountWithoutPassword(t *testing.T) {
-	store := newAuthMemoryStore()
+	store := NewMemoryStore()
 	phone := "13800009999"
 
 	if err := store.saveSMSCode(phone, "123456"); err != nil {
@@ -33,7 +33,7 @@ func TestAuthStoreContractSMSLoginCreatesAccountWithoutPassword(t *testing.T) {
 }
 
 func TestAuthStoreContractPasswordLifecycle(t *testing.T) {
-	store := newAuthMemoryStore()
+	store := NewMemoryStore()
 	phone := "13800009998"
 
 	user, err := store.findOrCreateUserByPhone(phone)

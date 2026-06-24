@@ -1,4 +1,4 @@
-package main
+package flashauth
 
 import (
 	"crypto/rand"
@@ -14,26 +14,26 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-type mysqlAuthStore struct {
+type MySQLStore struct {
 	db *sql.DB
 }
 
-func configureAuthStore(config DatabaseConfig) error {
+func ConfigureStore(config DatabaseConfig) error {
 	if !config.Enabled() {
-		authStore = newAuthMemoryStore()
+		store = NewMemoryStore()
 		return nil
 	}
 
-	store, err := newMySQLAuthStore(config)
+	nextStore, err := NewMySQLStore(config)
 	if err != nil {
 		return err
 	}
 
-	authStore = store
+	store = nextStore
 	return nil
 }
 
-func newMySQLAuthStore(config DatabaseConfig) (*mysqlAuthStore, error) {
+func NewMySQLStore(config DatabaseConfig) (*MySQLStore, error) {
 	if config.DSN == "" {
 		if err := ensureMySQLDatabase(config); err != nil {
 			return nil, err
@@ -54,7 +54,7 @@ func newMySQLAuthStore(config DatabaseConfig) (*mysqlAuthStore, error) {
 		return nil, err
 	}
 
-	store := &mysqlAuthStore{db: db}
+	store := &MySQLStore{db: db}
 	if err := store.migrate(); err != nil {
 		_ = db.Close()
 		return nil, err
@@ -105,7 +105,7 @@ func quoteMySQLIdentifier(value string) (string, error) {
 	return "`" + value + "`", nil
 }
 
-func (store *mysqlAuthStore) migrate() error {
+func (store *MySQLStore) migrate() error {
 	statements := []string{
 		`CREATE TABLE IF NOT EXISTS accounts (
 			id VARCHAR(32) NOT NULL PRIMARY KEY,
@@ -159,7 +159,7 @@ func (store *mysqlAuthStore) migrate() error {
 	return nil
 }
 
-func (store *mysqlAuthStore) seedDefaultPasswordUsers() error {
+func (store *MySQLStore) seedDefaultPasswordUsers() error {
 	for index, seed := range defaultPasswordUsers {
 		userID := fmt.Sprintf("u_%06d", index+1)
 		if err := store.seedPasswordUser(userID, seed); err != nil {
@@ -170,14 +170,14 @@ func (store *mysqlAuthStore) seedDefaultPasswordUsers() error {
 	return nil
 }
 
-func (store *mysqlAuthStore) seedPasswordUser(userID string, seed authPasswordSeed) error {
+func (store *MySQLStore) seedPasswordUser(userID string, seed authPasswordSeed) error {
 	user, ok, err := store.findUserByPhone(seed.Phone)
 	if err != nil {
 		return err
 	}
 
 	if !ok {
-		user = authUser{
+		user = User{
 			UserID:   userID,
 			Nickname: seed.Nickname,
 			Avatar:   fmt.Sprintf("https://example.com/avatars/%s.png", userID),
@@ -216,7 +216,7 @@ func (store *mysqlAuthStore) seedPasswordUser(userID string, seed authPasswordSe
 	return err
 }
 
-func (store *mysqlAuthStore) saveSMSCode(phone string, code string) error {
+func (store *MySQLStore) saveSMSCode(phone string, code string) error {
 	_, err := store.db.Exec(
 		`INSERT INTO sms_codes (phone, code, expires_at, consumed_at)
 		 VALUES (?, ?, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 5 MINUTE), NULL)`,
@@ -226,7 +226,7 @@ func (store *mysqlAuthStore) saveSMSCode(phone string, code string) error {
 	return err
 }
 
-func (store *mysqlAuthStore) verifySMSCode(phone string, code string) (bool, error) {
+func (store *MySQLStore) verifySMSCode(phone string, code string) (bool, error) {
 	var id int64
 	err := store.db.QueryRow(
 		`SELECT id
@@ -255,10 +255,10 @@ func (store *mysqlAuthStore) verifySMSCode(phone string, code string) (bool, err
 	return true, nil
 }
 
-func (store *mysqlAuthStore) findOrCreateUserByPhone(phone string) (authUser, error) {
+func (store *MySQLStore) findOrCreateUserByPhone(phone string) (User, error) {
 	user, ok, err := store.findUserByPhone(phone)
 	if err != nil {
-		return authUser{}, err
+		return User{}, err
 	}
 	if ok {
 		return user, nil
@@ -267,10 +267,10 @@ func (store *mysqlAuthStore) findOrCreateUserByPhone(phone string) (authUser, er
 	for attempt := 0; attempt < 3; attempt++ {
 		userID, err := generatePersistentAuthUserID()
 		if err != nil {
-			return authUser{}, err
+			return User{}, err
 		}
 
-		user := authUser{
+		user := User{
 			UserID:   userID,
 			Nickname: phone,
 			Avatar:   fmt.Sprintf("https://example.com/avatars/%s.png", userID),
@@ -280,7 +280,7 @@ func (store *mysqlAuthStore) findOrCreateUserByPhone(phone string) (authUser, er
 			if isMySQLDuplicateError(err) {
 				existingUser, ok, findErr := store.findUserByPhone(phone)
 				if findErr != nil {
-					return authUser{}, findErr
+					return User{}, findErr
 				}
 				if ok {
 					return existingUser, nil
@@ -288,17 +288,17 @@ func (store *mysqlAuthStore) findOrCreateUserByPhone(phone string) (authUser, er
 				continue
 			}
 
-			return authUser{}, err
+			return User{}, err
 		}
 
 		return user, nil
 	}
 
-	return authUser{}, errors.New("failed to create unique user id")
+	return User{}, errors.New("failed to create unique user id")
 }
 
-func (store *mysqlAuthStore) authenticatePassword(phone string, password string) (authUser, bool, error) {
-	var user authUser
+func (store *MySQLStore) authenticatePassword(phone string, password string) (User, bool, error) {
+	var user User
 	var passwordHash sql.NullString
 	err := store.db.QueryRow(
 		`SELECT a.id, p.nickname, p.avatar_url, c.identifier, c.secret_hash
@@ -311,24 +311,24 @@ func (store *mysqlAuthStore) authenticatePassword(phone string, password string)
 		phone,
 	).Scan(&user.UserID, &user.Nickname, &user.Avatar, &user.Phone, &passwordHash)
 	if errors.Is(err, sql.ErrNoRows) {
-		return authUser{}, false, nil
+		return User{}, false, nil
 	}
 	if err != nil {
-		return authUser{}, false, err
+		return User{}, false, err
 	}
 
 	if !passwordHash.Valid || passwordHash.String == "" {
-		return authUser{}, false, nil
+		return User{}, false, nil
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(passwordHash.String), []byte(password)); err != nil {
-		return authUser{}, false, nil
+		return User{}, false, nil
 	}
 
 	return user, true, nil
 }
 
-func (store *mysqlAuthStore) findUserByID(userID string) (authUser, bool, error) {
+func (store *MySQLStore) findUserByID(userID string) (User, bool, error) {
 	return store.findUser(
 		`SELECT a.id, p.nickname, p.avatar_url, COALESCE(c.identifier, '')
 		 FROM accounts a
@@ -340,7 +340,7 @@ func (store *mysqlAuthStore) findUserByID(userID string) (authUser, bool, error)
 	)
 }
 
-func (store *mysqlAuthStore) findUserByPhone(phone string) (authUser, bool, error) {
+func (store *MySQLStore) findUserByPhone(phone string) (User, bool, error) {
 	return store.findUser(
 		`SELECT a.id, p.nickname, p.avatar_url, c.identifier
 		 FROM auth_credentials c
@@ -352,8 +352,8 @@ func (store *mysqlAuthStore) findUserByPhone(phone string) (authUser, bool, erro
 	)
 }
 
-func (store *mysqlAuthStore) findUser(query string, args ...interface{}) (authUser, bool, error) {
-	var user authUser
+func (store *MySQLStore) findUser(query string, args ...interface{}) (User, bool, error) {
+	var user User
 	err := store.db.QueryRow(query, args...).Scan(
 		&user.UserID,
 		&user.Nickname,
@@ -361,16 +361,16 @@ func (store *mysqlAuthStore) findUser(query string, args ...interface{}) (authUs
 		&user.Phone,
 	)
 	if errors.Is(err, sql.ErrNoRows) {
-		return authUser{}, false, nil
+		return User{}, false, nil
 	}
 	if err != nil {
-		return authUser{}, false, err
+		return User{}, false, err
 	}
 
 	return user, true, nil
 }
 
-func (store *mysqlAuthStore) insertUser(user authUser) error {
+func (store *MySQLStore) insertUser(user User) error {
 	tx, err := store.db.Begin()
 	if err != nil {
 		return err
@@ -409,7 +409,7 @@ func (store *mysqlAuthStore) insertUser(user authUser) error {
 	return tx.Commit()
 }
 
-func (store *mysqlAuthStore) hasPassword(userID string) (bool, error) {
+func (store *MySQLStore) hasPassword(userID string) (bool, error) {
 	var passwordHash sql.NullString
 	err := store.db.QueryRow(
 		`SELECT secret_hash
@@ -429,7 +429,7 @@ func (store *mysqlAuthStore) hasPassword(userID string) (bool, error) {
 	return passwordHash.Valid && passwordHash.String != "", nil
 }
 
-func (store *mysqlAuthStore) setInitialPassword(userID string, password string) error {
+func (store *MySQLStore) setInitialPassword(userID string, password string) error {
 	hasPassword, err := store.hasPassword(userID)
 	if err != nil {
 		return err
@@ -466,7 +466,7 @@ func (store *mysqlAuthStore) setInitialPassword(userID string, password string) 
 	return nil
 }
 
-func (store *mysqlAuthStore) changePassword(userID string, oldPassword string, newPassword string) error {
+func (store *MySQLStore) changePassword(userID string, oldPassword string, newPassword string) error {
 	var passwordHash sql.NullString
 	err := store.db.QueryRow(
 		`SELECT secret_hash
@@ -530,7 +530,7 @@ func isMySQLDuplicateError(err error) bool {
 	return errors.As(err, &mysqlErr) && mysqlErr.Number == 1062
 }
 
-func maskDatabaseConfig(config DatabaseConfig) string {
+func MaskDatabaseConfig(config DatabaseConfig) string {
 	if config.DSN != "" {
 		return "dsn"
 	}

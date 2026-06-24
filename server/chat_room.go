@@ -8,6 +8,8 @@ import (
 	"sync"
 	"time"
 
+	flashauth "learningai/server/modules/flash_auth"
+
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 )
@@ -46,7 +48,7 @@ type chatRoomHub struct {
 type chatRoomClient struct {
 	conn *websocket.Conn
 	mu   sync.Mutex
-	user authUser
+	user flashauth.User
 }
 
 func newChatRoomHub() *chatRoomHub {
@@ -201,50 +203,50 @@ func (client *chatRoomClient) writeError(message string) error {
 	})
 }
 
-func authenticateChatRoomConnection(conn *websocket.Conn) (authUser, bool) {
+func authenticateChatRoomConnection(conn *websocket.Conn) (flashauth.User, bool) {
 	messageType, message, err := conn.ReadMessage()
 	if err != nil {
 		log.Printf("chat_room read auth failed: %v", err)
-		return authUser{}, false
+		return flashauth.User{}, false
 	}
 
 	if messageType != websocket.TextMessage {
 		_ = writeChatRoomAuthFailed(conn, "auth message must be text")
-		return authUser{}, false
+		return flashauth.User{}, false
 	}
 
 	var clientMessage chatRoomClientMessage
 	if err := json.Unmarshal(message, &clientMessage); err != nil {
 		_ = writeChatRoomAuthFailed(conn, "invalid auth json")
-		return authUser{}, false
+		return flashauth.User{}, false
 	}
 
 	if clientMessage.Type != chatRoomAuthType {
 		_ = writeChatRoomAuthFailed(conn, "first message must be auth")
-		return authUser{}, false
+		return flashauth.User{}, false
 	}
 
 	tokenText := strings.TrimSpace(clientMessage.Token)
 	if tokenText == "" {
 		_ = writeChatRoomAuthFailed(conn, "token is required")
-		return authUser{}, false
+		return flashauth.User{}, false
 	}
 
-	userID, err := parseUserIDFromJWT(tokenText)
+	userID, err := flashauth.ParseUserIDFromJWT(tokenText)
 	if err != nil {
 		_ = writeChatRoomAuthFailed(conn, "invalid token")
-		return authUser{}, false
+		return flashauth.User{}, false
 	}
 
-	user, ok, err := authStore.findUserByID(userID)
+	user, ok, err := flashauth.FindUserByID(userID)
 	if err != nil {
 		log.Printf("chat_room find user failed: %v", err)
 		_ = writeChatRoomAuthFailed(conn, "invalid token")
-		return authUser{}, false
+		return flashauth.User{}, false
 	}
 	if !ok {
 		_ = writeChatRoomAuthFailed(conn, "invalid token")
-		return authUser{}, false
+		return flashauth.User{}, false
 	}
 
 	return user, true
